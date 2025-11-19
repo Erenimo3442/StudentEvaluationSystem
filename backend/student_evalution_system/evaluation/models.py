@@ -28,12 +28,15 @@ class Assessment(models.Model):
 class Assessment_CO_Mapping(models.Model):
     assessment = models.ForeignKey(Assessment, on_delete=models.CASCADE, related_name='co_weights')
     course_outcome = models.ForeignKey(CourseOutcome, on_delete=models.CASCADE)
-    weight = models.FloatField(help_text="How much this assessment covers this CO (0.0 to 1.0)")
+    weight = models.FloatField(help_text="0.0 to 1.0")
 
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['assessment', 'course_outcome'], name='unique_assessment_co')
         ]
+
+    def __str__(self):
+        return f"{self.assessment.name} → {self.course_outcome.code} ({self.weight})"
 
 class StudentGrade(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -44,3 +47,19 @@ class StudentGrade(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['student', 'assessment'], name='unique_student_grade')
         ]
+    
+    def __str__(self):
+        return f"{self.student.username}: {self.assessment.name} - {self.score}"
+
+class CourseEnrollment(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    course = models.ForeignKey('core.Course', on_delete=models.CASCADE)
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta: 
+        constraints = [
+            models.UniqueConstraint(fields=['student', 'course'], name='unique_enrollment')
+        ]
+    
+    def __str__(self):
+        return f"{self.student.username} enrolled in {self.course.code}"

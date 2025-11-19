@@ -1,8 +1,9 @@
 from django.contrib import admin
-from .models import CourseOutcome, Assessment, Assessment_CO_Mapping, StudentGrade
+from .models import CourseOutcome, Assessment, Assessment_CO_Mapping, StudentGrade, CourseEnrollment
 
 admin.site.register(CourseOutcome)
 admin.site.register(StudentGrade)
+admin.site.register(CourseEnrollment)
 
 class AssessmentCOInline(admin.TabularInline):
     model = Assessment_CO_Mapping

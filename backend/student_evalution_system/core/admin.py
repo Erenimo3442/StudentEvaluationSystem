@@ -1,10 +1,12 @@
 from django.contrib import admin
-from .models import Term, ProgramOutcome, Course, CO_PO_Mapping, Department, University
+from .models import Term, Program, Department, University, ProgramOutcome, Course, CO_PO_Mapping, DegreeLevel
 
 admin.site.register(Term)
+admin.site.register(Program)
 admin.site.register(ProgramOutcome)
 admin.site.register(Department)
 admin.site.register(University)
+admin.site.register(DegreeLevel)
 
 class CoursePOInline(admin.TabularInline):
     model = CO_PO_Mapping

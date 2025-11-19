@@ -6,7 +6,7 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ('Academic Info', {'fields': ('role', 'university', 'department')}),
     )
-    list_display = ('username', 'email', 'role')
+    list_display = ('username', 'first_name', 'last_name', 'email', 'role', 'department', 'university')
 
 admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(StudentProfile)

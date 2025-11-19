@@ -15,6 +15,21 @@ class Department(models.Model):
     def __str__(self):
         return self.name
     
+class Program(models.Model):
+    name = models.CharField(max_length=255) 
+    code = models.CharField(max_length=10, unique=True) 
+    degree_level = models.ForeignKey('DegreeLevel', on_delete=models.CASCADE)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    
+    def __str__(self):
+        return f"{self.name} ({self.degree_level})"
+    
+class DegreeLevel(models.Model):
+    name = models.CharField(max_length=100)
+    
+    def __str__(self):
+        return self.name
+    
 class University(models.Model):
     name = models.CharField(max_length=255)
     
@@ -49,7 +64,7 @@ class CO_PO_Mapping(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     course_outcome = models.ForeignKey('evaluation.CourseOutcome', on_delete=models.CASCADE)
     program_outcome = models.ForeignKey(ProgramOutcome, on_delete=models.CASCADE)
-    weight = models.PositiveIntegerField(default=0) 
+    weight_percentage = models.FloatField(help_text="0.0 to 1.0") 
 
     class Meta:
         constraints = [
