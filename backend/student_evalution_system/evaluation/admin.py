@@ -12,4 +12,4 @@ class AssessmentCOInline(admin.TabularInline):
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
     list_display = ('name', 'course', 'total_score', 'weight_percentage')
-    inlines = [AssessmentCOInline] # Allows mapping COs directly inside the Assessment page
+    inlines = [AssessmentCOInline]
