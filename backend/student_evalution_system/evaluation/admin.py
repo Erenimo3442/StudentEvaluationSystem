@@ -5,6 +5,7 @@ admin.site.register(CourseOutcome)
 admin.site.register(StudentGrade)
 admin.site.register(CourseEnrollment)
 
+
 class AssessmentCOInline(admin.TabularInline):
     model = Assessment_CO_Mapping
     extra = 1
