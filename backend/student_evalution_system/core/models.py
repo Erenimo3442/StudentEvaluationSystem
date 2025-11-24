@@ -71,4 +71,28 @@ class CO_PO_Mapping(models.Model):
             models.UniqueConstraint(fields=['course', 'course_outcome', 'program_outcome'], name='unique_co_po_mapping')
         ]
 
+class StudentCOScore(models.Model):
+    """
+    Stores the calculated score for a specific Student in a specific Course Outcome.
+    """
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    course_outcome = models.ForeignKey('evaluation.CourseOutcome', on_delete=models.CASCADE)
+    score = models.FloatField(default=0.0)
+    
+    class Meta:
+        unique_together = ('student', 'course_outcome') 
+
+class StudentPOScore(models.Model):
+    """
+    Stores the calculated score for a Student in a specific PO, 
+    SPECIFIC TO ONE COURSE. 
+    """
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    course = models.ForeignKey('core.Course', on_delete=models.CASCADE)
+    program_outcome = models.ForeignKey('core.ProgramOutcome', on_delete=models.CASCADE)
+    score = models.FloatField(default=0.0)
+
+    class Meta:
+        unique_together = ('student', 'course', 'program_outcome')
+
 
