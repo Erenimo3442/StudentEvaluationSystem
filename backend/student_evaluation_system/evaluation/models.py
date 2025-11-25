@@ -28,7 +28,7 @@ class Assessment(TimeStampedModel):
     )
     date = models.DateField()
     total_score = models.PositiveIntegerField(default=100)
-    weight_percentage = models.FloatField(
+    weight = models.FloatField(
         help_text="0.0 to 1.0",
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)]
     )

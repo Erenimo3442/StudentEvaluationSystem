@@ -1,86 +1,179 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { Card } from '../components/ui/Card'
+import { ChartWidget } from '../components/ui/ChartWidget'
+import {
+  BuildingOfficeIcon,
+  UserGroupIcon,
+  BookOpenIcon,
+  ChartBarIcon,
+  ArrowDownTrayIcon,
+  DocumentIcon
+} from '@heroicons/react/24/outline'
+import { coreService } from '../services/api'
+import { Program } from '../types/index'
 
 const HeadDashboard = () => {
+  const [programs, setPrograms] = useState<Program[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const programsRes = await coreService.getPrograms()
+        setPrograms(programsRes.data)
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  // Mock data for Program Performance (replace with real API call later)
+  const programPerformance = {
+    series: [{
+      name: 'Average GPA',
+      data: [3.2, 2.9, 3.4, 3.1]
+    }],
+    options: {
+      xaxis: {
+        categories: programs.map(p => p.code) // Use real program codes
+      },
+      colors: ['#0ea5e9']
+    }
+  }
+
+  // Mock data for Enrollment Trends (replace with real API call later)
+  const enrollmentTrends = {
+    series: [{
+      name: 'Students',
+      data: [320, 342, 355, 380, 410]
+    }],
+    options: {
+      xaxis: {
+        categories: ['2021', '2022', '2023', '2024', '2025']
+      },
+      stroke: { curve: 'smooth' },
+      colors: ['#8b5cf6']
+    }
+  }
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-96">Loading...</div>
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-secondary-900 mb-6">Department Head Dashboard</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="card">
-            <h3 className="text-lg font-medium text-secondary-900 mb-2">Total Programs</h3>
-            <p className="text-3xl font-bold text-primary-600">3</p>
-            <p className="text-sm text-secondary-600">Active programs</p>
-          </div>
-          
-          <div className="card">
-            <h3 className="text-lg font-medium text-secondary-900 mb-2">Total Courses</h3>
-            <p className="text-3xl font-bold text-primary-600">24</p>
-            <p className="text-sm text-secondary-600">Across all programs</p>
-          </div>
-          
-          <div className="card">
-            <h3 className="text-lg font-medium text-secondary-900 mb-2">Total Students</h3>
-            <p className="text-3xl font-bold text-primary-600">342</p>
-            <p className="text-sm text-secondary-600">Enrolled students</p>
-          </div>
-          
-          <div className="card">
-            <h3 className="text-lg font-medium text-secondary-900 mb-2">Department Average</h3>
-            <p className="text-3xl font-bold text-green-600">78%</p>
-            <p className="text-sm text-secondary-600">Overall performance</p>
-          </div>
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 p-8 text-white shadow-lg">
+        <div className="relative z-10">
+          <h1 className="text-3xl font-bold mb-2">Department Overview</h1>
+          <p className="text-sky-100 text-lg">Computer Science & Engineering Department</p>
         </div>
+        <div className="absolute right-0 top-0 h-full w-1/3 bg-white/10 skew-x-12 transform origin-bottom-right" />
+        <div className="absolute right-20 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform origin-bottom-right" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h2 className="text-xl font-bold text-secondary-900 mb-4">Programs Overview</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-secondary-50 rounded">
-              <div>
-                <p className="font-medium">Computer Science</p>
-                <p className="text-sm text-secondary-600">156 students • 12 courses</p>
-              </div>
-              <span className="text-green-600 font-medium">82%</span>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card variant="flat" className="bg-white border-secondary-200">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-sky-100 rounded-xl">
+              <UserGroupIcon className="h-8 w-8 text-sky-600" />
             </div>
-            <div className="flex justify-between items-center p-3 bg-secondary-50 rounded">
-              <div>
-                <p className="font-medium">Information Technology</p>
-                <p className="text-sm text-secondary-600">124 students • 8 courses</p>
-              </div>
-              <span className="text-yellow-600 font-medium">76%</span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-secondary-50 rounded">
-              <div>
-                <p className="font-medium">Software Engineering</p>
-                <p className="text-sm text-secondary-600">62 students • 4 courses</p>
-              </div>
-              <span className="text-green-600 font-medium">79%</span>
+            <div>
+              <p className="text-sm text-secondary-600 font-medium">Total Students</p>
+              <p className="text-3xl font-bold text-secondary-900">410</p>
             </div>
           </div>
-        </div>
-
-        <div className="card">
-          <h2 className="text-xl font-bold text-secondary-900 mb-4">Recent Activities</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-blue-50 rounded border-l-4 border-blue-400">
-              <div>
-                <p className="font-medium">New program approved</p>
-                <p className="text-sm text-secondary-600">Data Science Program - CS Department</p>
-              </div>
-              <span className="text-blue-600 text-sm">2 days ago</span>
+        </Card>
+        <Card variant="flat" className="bg-white border-secondary-200">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-indigo-100 rounded-xl">
+              <BuildingOfficeIcon className="h-8 w-8 text-indigo-600" />
             </div>
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded border-l-4 border-green-400">
-              <div>
-                <p className="font-medium">Accreditation report submitted</p>
-                <p className="text-sm text-secondary-600">ABET review for CS program</p>
-              </div>
-              <span className="text-green-600 text-sm">1 week ago</span>
+            <div>
+              <p className="text-sm text-secondary-600 font-medium">Faculty Members</p>
+              <p className="text-3xl font-bold text-secondary-900">24</p>
             </div>
           </div>
-        </div>
+        </Card>
+        <Card variant="flat" className="bg-white border-secondary-200">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-fuchsia-100 rounded-xl">
+              <BookOpenIcon className="h-8 w-8 text-fuchsia-600" />
+            </div>
+            <div>
+              <p className="text-sm text-secondary-600 font-medium">Active Programs</p>
+              <p className="text-3xl font-bold text-secondary-900">{programs.length}</p>
+            </div>
+          </div>
+        </Card>
+        <Card variant="flat" className="bg-white border-secondary-200">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <ChartBarIcon className="h-8 w-8 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm text-secondary-600 font-medium">Dept. Avg GPA</p>
+              <p className="text-3xl font-bold text-secondary-900">3.15</p>
+            </div>
+          </div>
+        </Card>
       </div>
+
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <ChartWidget
+          title="Program Performance"
+          subtitle="Average GPA by Program"
+          type="bar"
+          series={programPerformance.series}
+          options={programPerformance.options}
+        />
+        <ChartWidget
+          title="Enrollment Trends"
+          subtitle="Year-over-year student enrollment"
+          type="line"
+          series={enrollmentTrends.series}
+          options={enrollmentTrends.options}
+        />
+      </div>
+
+      {/* Reports Section */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-secondary-900">Department Reports</h2>
+          <button className="text-sky-600 hover:text-sky-700 font-medium text-sm">View All Reports</button>
+        </div>
+        <div className="space-y-4">
+          {[
+            { name: 'Fall 2025 Accreditation Report', type: 'PDF', size: '2.4 MB', date: 'Nov 20, 2025' },
+            { name: 'Faculty Evaluation Summary', type: 'Excel', size: '1.1 MB', date: 'Nov 15, 2025' },
+            { name: 'Student Outcome Assessment', type: 'PDF', size: '3.8 MB', date: 'Nov 10, 2025' },
+          ].map((report, index) => (
+            <div key={index} className="flex items-center justify-between p-4 bg-secondary-50 rounded-xl hover:bg-secondary-100 transition-colors group cursor-pointer">
+              <div className="flex items-center space-x-4">
+                <div className="h-10 w-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                  <DocumentIcon className="h-6 w-6 text-secondary-500 group-hover:text-sky-600 transition-colors" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-secondary-900">{report.name}</h4>
+                  <p className="text-sm text-secondary-500">{report.type} • {report.size}</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-secondary-500">{report.date}</span>
+                <button className="p-2 text-secondary-400 hover:text-sky-600 transition-colors">
+                  <ArrowDownTrayIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   )
 }

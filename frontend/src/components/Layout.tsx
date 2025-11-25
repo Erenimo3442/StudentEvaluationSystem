@@ -1,55 +1,39 @@
-import React, { ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { Sidebar } from './Sidebar'
+import { Header } from './Header'
 
-interface LayoutProps {
-  children: ReactNode
-}
-
-const Layout = ({ children }: LayoutProps) => {
-  const { isAuthenticated, isLoading } = useAuth()
+const Layout = () => {
+  const { isLoading } = useAuth()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-secondary-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-secondary-600 font-medium">Loading...</p>
+        </div>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
+  // Removed authentication check to allow guest access
 
   return (
-    <div className="min-h-screen bg-secondary-50">
-      <nav className="bg-white shadow-sm border-b border-secondary-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
-              <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-xl font-bold text-secondary-900">SES</h1>
-              </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <a href="/" className="border-primary-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  Dashboard
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center">
-              <button className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-secondary-50 flex">
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {children}
-        </div>
-      </main>
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+        <Header setSidebarOpen={setSidebarOpen} />
+
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

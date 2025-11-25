@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
 
 router = DefaultRouter()
@@ -9,4 +10,8 @@ router.register(r'instructors', views.InstructorProfileViewSet, basename='instru
 
 urlpatterns = [
     path('', include(router.urls)),
+    # JWT Authentication endpoints
+    path('auth/login/', views.LoginView.as_view(), name='login'),
+    path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('auth/me/', views.CurrentUserView.as_view(), name='current_user'),
 ]

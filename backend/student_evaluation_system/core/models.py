@@ -95,8 +95,8 @@ class Program(models.Model):
 class ProgramOutcome(TimeStampedModel):
     description = models.TextField()
     code = models.CharField(max_length=10)
-    department = models.ForeignKey(
-        Department, 
+    program = models.ForeignKey(
+        Program, 
         on_delete=models.CASCADE, 
         related_name='program_outcomes'
     )
@@ -116,8 +116,8 @@ class ProgramOutcome(TimeStampedModel):
         ordering = ['code']
         constraints = [
             models.UniqueConstraint(
-                fields=['code', 'department', 'term'], 
-                name='unique_po_code_per_dept_term'
+                fields=['code', 'program', 'term'], 
+                name='unique_po_code_per_program_term'
             )
         ]
         verbose_name = "Program Outcome"
@@ -129,8 +129,9 @@ class ProgramOutcome(TimeStampedModel):
 class Course(TimeStampedModel):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=10)
-    department = models.ForeignKey(
-        Department, 
+    credits = models.PositiveIntegerField(default=3)
+    program = models.ForeignKey(
+        Program, 
         on_delete=models.CASCADE, 
         related_name='courses'
     )
@@ -149,8 +150,8 @@ class Course(TimeStampedModel):
         ordering = ['code']
         constraints = [
             models.UniqueConstraint(
-                fields=['code', 'department', 'term'], 
-                name='unique_course_code_per_dept_term'
+                fields=['code', 'program', 'term'], 
+                name='unique_course_code_per_program_term'
             )
         ]
         verbose_name = "Course"
@@ -222,7 +223,7 @@ class LearningOutcomeProgramOutcomeMapping(models.Model):
         on_delete=models.CASCADE, 
         related_name='lo_mappings'
     )
-    weight_percentage = models.FloatField(
+    weight = models.FloatField(
         help_text="0.0 to 1.0",
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)]
     )
@@ -280,18 +281,13 @@ class StudentLearningOutcomeScore(models.Model):
 class StudentProgramOutcomeScore(models.Model):
     """
     Renamed from StudentPOScore for clarity.
-    Stores the calculated score for a Student in a specific PO, 
-    SPECIFIC TO ONE COURSE. 
+    Stores the calculated score for a Student in a specific Program Outcome.
+    This is calculated by aggregating LO scores across ALL courses in the program.
     """
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='po_scores'
-    )
-    course = models.ForeignKey(
-        Course, 
-        on_delete=models.CASCADE, 
-        related_name='student_po_scores'
     )
     program_outcome = models.ForeignKey(
         ProgramOutcome, 
@@ -299,12 +295,18 @@ class StudentProgramOutcomeScore(models.Model):
         related_name='student_scores'
     )
     score = models.FloatField(default=0.0, validators=[MinValueValidator(0.0)])
+    # Optional: track which term this calculation is for
+    term = models.ForeignKey(
+        Term,
+        on_delete=models.CASCADE,
+        related_name='student_po_scores'
+    )
 
     class Meta:
-        ordering = ['student', 'course', 'program_outcome']
+        ordering = ['student', 'program_outcome']
         constraints = [
             models.UniqueConstraint(
-                fields=['student', 'course', 'program_outcome'], 
+                fields=['student', 'program_outcome', 'term'], 
                 name='unique_student_po_score'
             )
         ]

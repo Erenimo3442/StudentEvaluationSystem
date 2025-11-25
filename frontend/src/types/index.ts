@@ -4,16 +4,30 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'student' | 'lecturer' | 'head';
+  role: 'student' | 'lecturer' | 'head' | 'admin';
   staff_id?: string;
   student_id?: string;
   department?: string;
+}
+
+export interface University {
+  id: number
+  name: string
+  code: string
+}
+
+export interface Department {
+  id: number
+  name: string
+  code: string
+  university: number
 }
 
 export interface Program {
   id: number;
   name: string;
   code: string;
+  department: number; // Added department field
   description: string;
   duration_years: number;
   total_credits: number;
@@ -32,18 +46,64 @@ export interface ProgramOutcome {
 
 export interface Course {
   id: number;
-  program: number;
+  program?: number;
   code: string;
   name: string;
-  description: string;
+  description?: string;
   credits: number;
-  level: 'undergraduate' | 'graduate';
-  year: number;
-  semester: 'fall' | 'spring' | 'summer';
-  lecturer: User;
-  created_at: string;
-  updated_at: string;
+  level?: 'undergraduate' | 'graduate';
+  year?: number;
+  semester?: 'fall' | 'spring' | 'summer';
+  lecturer?: User;
+  department?: {
+    id: number;
+    name: string;
+    code: string;
+  };
+  term?: {
+    id: number;
+    name: string;
+    is_active: boolean;
+  };
+  instructors?: string[];
+  created_at?: string;
+  updated_at?: string;
   course_analytics?: CourseAnalytics;
+}
+
+export interface Enrollment {
+  id: number
+  student: number
+  course: Course
+  term: number
+  grade?: string
+}
+
+export interface LearningOutcomeScore {
+  id: number
+  student: number
+  learning_outcome: {
+    id: number
+    code: string
+    description: string
+    course: {
+      id: number
+      code: string
+      name: string
+    }
+  }
+  score: number
+}
+
+export interface ProgramOutcomeScore {
+  id: number
+  student: number
+  program_outcome: {
+    id: number
+    code: string
+    description: string
+  }
+  score: number
 }
 
 export interface CourseOutcome {

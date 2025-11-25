@@ -45,13 +45,6 @@ class ProgramOutcomeSerializer(serializers.ModelSerializer):
         model = ProgramOutcome
         fields = ['id', 'code', 'description', 'department', 'term', 'created_at']
 
-class LearningOutcomeSerializer(serializers.ModelSerializer):
-    course = serializers.StringRelatedField()
-    
-    class Meta:
-        model = LearningOutcome
-        fields = ['id', 'code', 'description', 'course', 'created_at']
-
 class CourseSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(read_only=True)
     term = TermSerializer(read_only=True)
@@ -61,13 +54,20 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = ['id', 'code', 'name', 'department', 'term', 'instructors', 'created_at']
 
+class LearningOutcomeSerializer(serializers.ModelSerializer):
+    course = CourseSerializer(read_only=True)
+    
+    class Meta:
+        model = LearningOutcome
+        fields = ['id', 'code', 'description', 'course', 'created_at']
+
 class LearningOutcomeProgramOutcomeMappingSerializer(serializers.ModelSerializer):
     learning_outcome = LearningOutcomeSerializer(read_only=True)
     program_outcome = ProgramOutcomeSerializer(read_only=True)
     
     class Meta:
         model = LearningOutcomeProgramOutcomeMapping
-        fields = ['id', 'course', 'learning_outcome', 'program_outcome', 'weight_percentage']
+        fields = ['id', 'course', 'learning_outcome', 'program_outcome', 'weight']
 
 class StudentLearningOutcomeScoreSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField()
@@ -79,9 +79,9 @@ class StudentLearningOutcomeScoreSerializer(serializers.ModelSerializer):
 
 class StudentProgramOutcomeScoreSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField()
-    course = serializers.StringRelatedField()
+    term = serializers.StringRelatedField()
     program_outcome = ProgramOutcomeSerializer(read_only=True)
     
     class Meta:
         model = StudentProgramOutcomeScore
-        fields = ['id', 'student', 'course', 'program_outcome', 'score']
+        fields = ['id', 'student', 'term', 'program_outcome', 'score']

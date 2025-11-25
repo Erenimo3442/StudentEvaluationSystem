@@ -1,6 +1,7 @@
 from rest_framework import generics, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema_view, extend_schema
 
 from .models import (
     University, Department, DegreeLevel, Program, Term,
@@ -18,6 +19,14 @@ from .serializers import (
 from users.models import StudentProfile
 from users.serializers import StudentProfileSerializer
 
+@extend_schema_view(
+    list=extend_schema(tags=['Academic Structure']),
+    retrieve=extend_schema(tags=['Academic Structure']),
+    create=extend_schema(tags=['Academic Structure']),
+    update=extend_schema(tags=['Academic Structure']),
+    partial_update=extend_schema(tags=['Academic Structure']),
+    destroy=extend_schema(tags=['Academic Structure']),
+)
 class UniversityViewSet(viewsets.ModelViewSet):
     """CRUD operations for universities."""
     queryset = University.objects.all()
@@ -104,7 +113,14 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer = LearningOutcomeSerializer(outcomes, many=True)
         return Response(serializer.data)
 
-
+@extend_schema_view(
+    list=extend_schema(tags=['Outcomes']),
+    retrieve=extend_schema(tags=['Outcomes']),
+    create=extend_schema(tags=['Outcomes']),
+    update=extend_schema(tags=['Outcomes']),
+    partial_update=extend_schema(tags=['Outcomes']),
+    destroy=extend_schema(tags=['Outcomes']),
+)
 class ProgramOutcomeViewSet(viewsets.ModelViewSet):
     """CRUD operations for program outcomes."""
     queryset = ProgramOutcome.objects.select_related('department', 'term', 'created_by').all()
@@ -178,7 +194,7 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
 class StudentProgramOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
     """Read-only access to calculated PO scores."""
     queryset = StudentProgramOutcomeScore.objects.select_related(
-        'student', 'course', 'program_outcome'
+        'student', 'program_outcome', 'term'
     ).all()
     serializer_class = StudentProgramOutcomeScoreSerializer
     

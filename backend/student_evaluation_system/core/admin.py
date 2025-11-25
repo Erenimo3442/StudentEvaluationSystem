@@ -35,8 +35,8 @@ class ProgramAdmin(admin.ModelAdmin):
 
 @admin.register(ProgramOutcome)
 class ProgramOutcomeAdmin(admin.ModelAdmin):
-    list_display = ['code', 'short_description', 'department', 'term']
-    list_filter = ['department', 'term']
+    list_display = ['code', 'short_description', 'program', 'term']
+    list_filter = ['program', 'term']
     search_fields = ['code', 'description']
 
     def short_description(self, obj):
@@ -45,7 +45,7 @@ class ProgramOutcomeAdmin(admin.ModelAdmin):
 @admin.register(LearningOutcome)
 class LearningOutcomeAdmin(admin.ModelAdmin):
     list_display = ['code', 'short_description', 'course']
-    list_filter = ['course__department', 'course__term']
+    list_filter = ['course__program', 'course__term']
     search_fields = ['code', 'description', 'course__code', 'course__name']
 
     def short_description(self, obj):
@@ -59,9 +59,9 @@ class StudentLearningOutcomeScoreAdmin(admin.ModelAdmin):
 
 @admin.register(StudentProgramOutcomeScore)
 class StudentProgramOutcomeScoreAdmin(admin.ModelAdmin):
-    list_display = ['student', 'program_outcome', 'course', 'score']
-    list_filter = ['course', 'program_outcome']
-    search_fields = ['student__username', 'program_outcome__code', 'course__code']
+    list_display = ['student', 'program_outcome', 'term', 'score']
+    list_filter = ['term', 'program_outcome']
+    search_fields = ['student__username', 'program_outcome__code']
 
 class LearningOutcomeProgramOutcomeMappingInline(admin.TabularInline):
     model = LearningOutcomeProgramOutcomeMapping
@@ -69,8 +69,8 @@ class LearningOutcomeProgramOutcomeMappingInline(admin.TabularInline):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ['code', 'name', 'department', 'term']
-    list_filter = ['department', 'term']
+    list_display = ['code', 'name', 'program', 'term']
+    list_filter = ['program', 'term']
     search_fields = ['code', 'name']
     filter_horizontal = ['instructors']
     inlines = [LearningOutcomeProgramOutcomeMappingInline]

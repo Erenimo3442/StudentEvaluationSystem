@@ -1,6 +1,6 @@
 import React, { useContext, createContext, useEffect, useState, ReactNode } from 'react'
-import { User } from '../types'
-import apiService from '../services/api'
+import { User } from '../types/index'
+import { authService } from '../services/api'
 
 interface AuthContextType {
   user: User | null
@@ -33,12 +33,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const token = localStorage.getItem('access_token')
       if (token) {
         try {
-          const currentUser = await apiService.getCurrentUser()
+          const currentUser = await authService.getCurrentUser()
           setUser(currentUser)
         } catch (error) {
           // Token is invalid, clear it
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
+          authService.logout()
         }
       }
       setIsLoading(false)
@@ -49,21 +48,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (username: string, password: string) => {
     try {
-      const { user: loggedInUser } = await apiService.login({ username, password })
-      setUser(loggedInUser)
+      // 1. Login to get tokens
+      await authService.login({ username, password })
+
+      // 2. Fetch user details
+      const currentUser = await authService.getCurrentUser()
+      setUser(currentUser)
     } catch (error) {
       throw error
     }
   }
 
-  const logout = async () => {
-    try {
-      await apiService.logout()
-    } catch (error) {
-      // Continue with logout even if API call fails
-    } finally {
-      setUser(null)
-    }
+  const logout = () => {
+    authService.logout()
+    setUser(null)
   }
 
   const value: AuthContextType = {

@@ -1,6 +1,6 @@
 # evaluation/services.py
 from django.db import transaction
-from .models import Assessment, AssessmentLearningOutcomeMapping, StudentGrade
+from .models import Assessment, AssessmentLearningOutcomeMapping, StudentGrade, CourseEnrollment
 from core.models import (
     Course, LearningOutcome, 
     StudentLearningOutcomeScore, StudentProgramOutcomeScore,
@@ -10,14 +10,14 @@ from core.models import (
 def calculate_course_scores(course_id):
     """
     1. Fetches all grades for the course.
-    2. Calculates LO scores for every student.
-    3. Calculates PO scores based on those LO scores.
-    4. Stores them in the database (wiping old values for this course).
+    2. Calculates LO scores for every student enrolled in the course.
+    3. Triggers program-level PO score calculation for affected students.
+    4. Stores them in the database (wiping old LO values for this course).
     """
     
     # 1. Setup: Fetch necessary data efficiently
-    course = Course.objects.get(id=course_id)
-    students = course.enrollments.all().select_related('student')  # Using related_name
+    course = Course.objects.select_related('program', 'term').get(id=course_id)
+    enrollments = CourseEnrollment.objects.filter(course=course).select_related('student')
     learning_outcomes = LearningOutcome.objects.filter(course=course)
     
     # Get all weights for this course in one go
@@ -32,21 +32,20 @@ def calculate_course_scores(course_id):
     for grade in StudentGrade.objects.filter(assessment__course=course):
         grade_map[(grade.student_id, grade.assessment_id)] = grade.score
 
-    # Prepare lists for bulk creation
+    # Prepare list for bulk creation
     lo_score_objects = []
-    po_score_objects = []
+    affected_students = set()
 
     with transaction.atomic():
-        # Step 2: Delete old calculations for this course (easiest way to handle updates)
+        # Step 2: Delete old LO calculations for this course
         StudentLearningOutcomeScore.objects.filter(learning_outcome__course=course).delete()
-        StudentProgramOutcomeScore.objects.filter(course=course).delete()
 
         # Step 3: Loop through Students and Learning Outcomes
-        for enrollment in students:
+        for enrollment in enrollments:
             student = enrollment.student
+            affected_students.add(student.id)
+            
             # --- Calculate LO Scores ---
-            student_lo_values = {} # Store for the next step (PO calculation)
-
             for lo in learning_outcomes:
                 total_score = 0
                 total_weight = 0
@@ -70,43 +69,80 @@ def calculate_course_scores(course_id):
                     learning_outcome=lo,
                     score=final_lo_score
                 ))
-                
-                # Keep in memory for PO step
-                student_lo_values[lo.id] = final_lo_score
 
-            # --- Calculate PO Scores (The Aggregation) ---
-            # Find which POs this course contributes to
-            po_contributions = LearningOutcomeProgramOutcomeMapping.objects.filter(course=course)
-            
-            # Group contributions by PO
-            # e.g. {PO1: [Mapping_Object_A, Mapping_Object_B]}
-            po_map = {} 
-            for contrib in po_contributions:
-                if contrib.program_outcome not in po_map:
-                    po_map[contrib.program_outcome] = []
-                po_map[contrib.program_outcome].append(contrib)
-
-            for po, contributions in po_map.items():
-                weighted_sum = 0
-                weight_sum = 0
-                
-                for contrib in contributions:
-                    # Get the student's score for the relevant LO (from memory)
-                    lo_score = student_lo_values.get(contrib.learning_outcome_id, 0)
-                    
-                    # Formula: LO Score * Weight Percentage
-                    weighted_sum += lo_score * contrib.weight_percentage
-                    weight_sum += contrib.weight_percentage
-                
-                final_po_score = (weighted_sum / weight_sum) if weight_sum > 0 else 0
-                
-                po_score_objects.append(StudentProgramOutcomeScore(
-                    student=student,
-                    course=course,
-                    program_outcome=po,
-                    score=final_po_score
-                ))
-
-        # Step 4: Bulk Save to Database
+        # Step 4: Bulk Save LO Scores
         StudentLearningOutcomeScore.objects.bulk_create(lo_score_objects)
-        StudentProgramOutcomeScore.objects.bulk_create(po_score_objects)
+    
+    # Step 5: Recalculate PO scores for all affected students in this program/term
+    for student_id in affected_students:
+        calculate_student_po_scores(student_id, course.program.id, course.term.id)
+
+
+def calculate_student_po_scores(student_id, program_id, term_id):
+    """
+    Calculate Program Outcome scores for a student across ALL courses in their program for a given term.
+    This aggregates LO scores from all courses the student is enrolled in.
+    """
+    from users.models import CustomUser
+    
+    student = CustomUser.objects.get(id=student_id)
+    
+    # Get all courses in this program for this term that the student is enrolled in
+    enrolled_courses = Course.objects.filter(
+        program_id=program_id,
+        term_id=term_id,
+        enrollments__student=student
+    )
+    
+    # Get all program outcomes for this program and term
+    from core.models import ProgramOutcome
+    program_outcomes = ProgramOutcome.objects.filter(program_id=program_id, term_id=term_id)
+    
+    po_score_objects = []
+    
+    with transaction.atomic():
+        # Delete old PO scores for this student in this program/term
+        StudentProgramOutcomeScore.objects.filter(
+            student=student,
+            program_outcome__program_id=program_id,
+            term_id=term_id
+        ).delete()
+        
+        # For each PO, aggregate across all courses
+        for po in program_outcomes:
+            total_weighted_score = 0
+            total_weight = 0
+            
+            # Find all LO->PO mappings for this PO across all enrolled courses
+            mappings = LearningOutcomeProgramOutcomeMapping.objects.filter(
+                program_outcome=po,
+                course__in=enrolled_courses
+            ).select_related('learning_outcome')
+            
+            for mapping in mappings:
+                # Get the student's LO score
+                try:
+                    lo_score = StudentLearningOutcomeScore.objects.get(
+                        student=student,
+                        learning_outcome=mapping.learning_outcome
+                    ).score
+                except StudentLearningOutcomeScore.DoesNotExist:
+                    lo_score = 0
+                
+                # Weighted contribution to PO
+                total_weighted_score += lo_score * mapping.weight
+                total_weight += mapping.weight
+            
+            # Calculate final PO score
+            final_po_score = (total_weighted_score / total_weight) if total_weight > 0 else 0
+            
+            po_score_objects.append(StudentProgramOutcomeScore(
+                student=student,
+                program_outcome=po,
+                term_id=term_id,
+                score=final_po_score
+            ))
+        
+        # Bulk save PO scores
+        if po_score_objects:
+            StudentProgramOutcomeScore.objects.bulk_create(po_score_objects)

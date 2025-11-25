@@ -1,15 +1,10 @@
-import React from 'react'
-import { useParams } from 'react-router-dom'
-
 const CourseDetail = () => {
-  const { id } = useParams<{ id: string }>()
-
   return (
     <div className="space-y-6">
       <div className="bg-white shadow rounded-lg p-6">
         <h1 className="text-2xl font-bold text-secondary-900 mb-2">CS101 - Introduction to Programming</h1>
         <p className="text-secondary-600 mb-6">Fundamental concepts of programming and problem-solving</p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="card">
             <h3 className="text-lg font-medium text-secondary-900 mb-2">Course Stats</h3>
@@ -28,7 +23,7 @@ const CourseDetail = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="card">
             <h3 className="text-lg font-medium text-secondary-900 mb-2">Performance</h3>
             <div className="space-y-2">
@@ -46,7 +41,7 @@ const CourseDetail = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="card">
             <h3 className="text-lg font-medium text-secondary-900 mb-2">Outcomes</h3>
             <div className="space-y-2">

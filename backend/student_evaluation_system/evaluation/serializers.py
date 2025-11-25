@@ -29,14 +29,14 @@ class AssessmentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Assessment
-        fields = ['id', 'name', 'course', 'date', 'total_score', 'weight_percentage', 
+        fields = ['id', 'name', 'course', 'date', 'total_score', 'weight', 
                   'lo_mappings', 'created_at']
 
 class AssessmentCreateSerializer(serializers.ModelSerializer):
     """For creating/updating assessments"""
     class Meta:
         model = Assessment
-        fields = ['id', 'name', 'course', 'date', 'total_score', 'weight_percentage', 'assessment_type']
+        fields = ['id', 'name', 'course', 'date', 'total_score', 'weight', 'assessment_type']
 
 class StudentGradeSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField()
@@ -53,8 +53,10 @@ class StudentGradeCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'student', 'assessment', 'score']
 
 class CourseEnrollmentSerializer(serializers.ModelSerializer):
+    from core.serializers import CourseSerializer
+    
     student = serializers.StringRelatedField()
-    course = serializers.StringRelatedField()
+    course = CourseSerializer(read_only=True)
     
     class Meta:
         model = CourseEnrollment

@@ -10,7 +10,7 @@ class StudentGradeAdmin(admin.ModelAdmin):
 @admin.register(CourseEnrollment)
 class CourseEnrollmentAdmin(admin.ModelAdmin):
     list_display = ['student', 'course', 'enrolled_at']
-    list_filter = ['course__term', 'course__department']
+    list_filter = ['course__term', 'course__program']
     search_fields = ['student__username', 'course__code', 'course__name']
 
 class AssessmentLearningOutcomeMappingInline(admin.TabularInline):
@@ -19,7 +19,7 @@ class AssessmentLearningOutcomeMappingInline(admin.TabularInline):
 
 @admin.register(Assessment)
 class AssessmentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'course', 'date', 'total_score', 'weight_percentage']
+    list_display = ['name', 'course', 'date', 'total_score', 'weight']
     list_filter = ['course', 'date']
     search_fields = ['name', 'course__code', 'course__name']
     inlines = [AssessmentLearningOutcomeMappingInline]

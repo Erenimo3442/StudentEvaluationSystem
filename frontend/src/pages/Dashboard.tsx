@@ -1,12 +1,12 @@
-import React from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
+import GuestDashboard from './GuestDashboard'
 
 const Dashboard = () => {
   const { user } = useAuth()
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <GuestDashboard />
   }
 
   const getRoleBasedDashboard = () => {
