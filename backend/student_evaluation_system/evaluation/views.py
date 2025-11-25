@@ -1,0 +1,184 @@
+from rest_framework import generics, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Avg, Count
+
+from .models import (
+    Assessment, AssessmentLearningOutcomeMapping,
+    StudentGrade, CourseEnrollment
+)
+from .serializers import (
+    AssessmentSerializer, AssessmentCreateSerializer,
+    AssessmentLearningOutcomeMappingSerializer,
+    StudentGradeSerializer, StudentGradeCreateSerializer,
+    CourseEnrollmentSerializer
+)
+from .services import calculate_course_scores
+class AssessmentViewSet(viewsets.ModelViewSet):
+    """CRUD operations for assessments."""
+    queryset = Assessment.objects.select_related('course', 'created_by').all()
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return AssessmentCreateSerializer
+        return AssessmentSerializer
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        course_id = self.request.query_params.get('course', None)
+        assessment_type = self.request.query_params.get('type', None)
+        
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        if assessment_type:
+            queryset = queryset.filter(assessment_type=assessment_type)
+        
+        return queryset
+    
+    @action(detail=True, methods=['get'])
+    def grades(self, request, pk=None):
+        """Get all grades for this assessment."""
+        assessment = self.get_object()
+        grades = assessment.student_grades.select_related('student')
+        serializer = StudentGradeSerializer(grades, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def statistics(self, request, pk=None):
+        """Get statistics for this assessment."""
+        assessment = self.get_object()
+        grades = assessment.student_grades.all()
+        
+        if not grades.exists():
+            return Response({'detail': 'No grades yet.'})
+        
+        stats = grades.aggregate(
+            average=Avg('score'),
+            count=Count('id')
+        )
+        
+        return Response({
+            'assessment': assessment.name,
+            'total_students': stats['count'],
+            'average_score': stats['average'],
+            'max_score': assessment.total_score
+        })
+
+
+class AssessmentLearningOutcomeMappingViewSet(viewsets.ModelViewSet):
+    """CRUD operations for assessment-LO mappings."""
+    queryset = AssessmentLearningOutcomeMapping.objects.select_related(
+        'assessment', 'learning_outcome'
+    ).all()
+    serializer_class = AssessmentLearningOutcomeMappingSerializer
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        assessment_id = self.request.query_params.get('assessment', None)
+        
+        if assessment_id:
+            queryset = queryset.filter(assessment_id=assessment_id)
+        
+        return queryset
+
+
+class StudentGradeViewSet(viewsets.ModelViewSet):
+    """CRUD operations for student grades."""
+    queryset = StudentGrade.objects.select_related(
+        'student', 'assessment', 'assessment__course'
+    ).all()
+    
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return StudentGradeCreateSerializer
+        return StudentGradeSerializer
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        student_id = self.request.query_params.get('student', None)
+        assessment_id = self.request.query_params.get('assessment', None)
+        course_id = self.request.query_params.get('course', None)
+        
+        if student_id:
+            queryset = queryset.filter(student_id=student_id)
+        if assessment_id:
+            queryset = queryset.filter(assessment_id=assessment_id)
+        if course_id:
+            queryset = queryset.filter(assessment__course_id=course_id)
+        
+        return queryset
+    
+    def perform_create(self, serializer):
+        """After creating a grade, recalculate scores."""
+        grade = serializer.save()
+        calculate_course_scores(grade.assessment.course_id)
+    
+    def perform_update(self, serializer):
+        """After updating a grade, recalculate scores."""
+        grade = serializer.save()
+        calculate_course_scores(grade.assessment.course_id)
+
+
+class CourseEnrollmentViewSet(viewsets.ModelViewSet):
+    """CRUD operations for course enrollments."""
+    queryset = CourseEnrollment.objects.select_related('student', 'course').all()
+    serializer_class = CourseEnrollmentSerializer
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        student_id = self.request.query_params.get('student', None)
+        course_id = self.request.query_params.get('course', None)
+        
+        if student_id:
+            queryset = queryset.filter(student_id=student_id)
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        
+        return queryset
+    
+    @action(detail=False, methods=['post'])
+    def bulk_enroll(self, request):
+        """Enroll multiple students in a course."""
+        course_id = request.data.get('course_id')
+        student_ids = request.data.get('student_ids', [])
+        
+        if not course_id or not student_ids:
+            return Response(
+                {'detail': 'course_id and student_ids are required.'},
+                status=400
+            )
+        
+        enrollments = []
+        for student_id in student_ids:
+            enrollment, created = CourseEnrollment.objects.get_or_create(
+                student_id=student_id,
+                course_id=course_id
+            )
+            if created:
+                enrollments.append(enrollment)
+        
+        serializer = self.get_serializer(enrollments, many=True)
+        return Response({
+            'enrolled_count': len(enrollments),
+            'enrollments': serializer.data
+        })
+
+
+# Legacy views for backward compatibility
+class EvaluationListView(generics.ListAPIView):
+    """List all student grades (evaluations)."""
+    queryset = StudentGrade.objects.select_related('student', 'assessment', 'assessment__course').all()
+    serializer_class = StudentGradeSerializer
+
+
+class EvaluationDetailView(generics.RetrieveAPIView):
+    """Retrieve a single student grade by PK."""
+    queryset = StudentGrade.objects.select_related('student', 'assessment', 'assessment__course').all()
+    serializer_class = StudentGradeSerializer
+
+
+class EvaluationCreateView(generics.CreateAPIView):
+    """Create a student grade (evaluation)."""
+    queryset = StudentGrade.objects.all()
+    serializer_class = StudentGradeCreateSerializer
+
