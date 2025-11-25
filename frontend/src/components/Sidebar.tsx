@@ -75,10 +75,7 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                     {/* Logo */}
                     <div className="h-16 flex items-center justify-between px-6 border-b border-secondary-200/50">
                         <Link to="/" className="flex items-center space-x-3">
-                            <div className="h-10 w-10 rounded-xl bg-primary-600 flex items-center justify-center shadow-lg">
-                                <span className="text-white font-bold text-lg">SE</span>
-                            </div>
-                            <span className="text-xl font-bold text-secondary-900 tracking-tight">Student Eval</span>
+                            <span className="text-xl font-bold text-secondary-900 tracking-tight">SES</span>
                         </Link>
                         <button
                             onClick={() => setIsOpen(false)}
