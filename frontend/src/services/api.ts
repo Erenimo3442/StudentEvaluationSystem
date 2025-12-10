@@ -52,7 +52,15 @@ export const coreService = {
   getUniversities: () => api.get<University[]>('/core/universities/'),
   getDepartments: (uniId?: number) => api.get<Department[]>('/core/departments/', { params: { university: uniId } }),
   getPrograms: (deptId?: number) => api.get<Program[]>('/core/programs/', { params: { department: deptId } }),
-  getCourses: (progId?: number) => api.get<Course[]>('/core/courses/', { params: { program: progId } }),
+  getCourses: async (progId?: number, userId?: number) => {
+    const response = await api.get('/core/courses/', { params: { program: progId, instructor: userId } })
+    // Handle paginated response
+    const data = response.data
+    if (data && typeof data === 'object' && 'results' in data) {
+      return { ...response, data: data.results }
+    }
+    return response
+  },
 
   getStudentLOScores: (studentId?: number) => api.get<LearningOutcomeScore[]>('/core/student-lo-scores/', { params: { student: studentId } }),
   getStudentPOScores: (studentId?: number) => api.get<ProgramOutcomeScore[]>('/core/student-po-scores/', { params: { student: studentId } }),
@@ -60,6 +68,43 @@ export const coreService = {
 
 export const evaluationService = {
   getEnrollments: (studentId?: number) => api.get<Enrollment[]>('/evaluation/enrollments/', { params: { student: studentId } }),
+}
+
+export const fileImportService = {
+  uploadFile: async (file: File, course: string) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('course', course)
+
+    const response = await api.post('/core/file-import/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
+  validateFile: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post('/core/file-import/validate/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
+  getUploadInfo: async () => {
+    const response = await api.get('/core/file-import/upload/')
+    return response.data
+  },
+
+  getValidateInfo: async () => {
+    const response = await api.get('/core/file-import/validate/')
+    return response.data
+  },
 }
 
 export default api

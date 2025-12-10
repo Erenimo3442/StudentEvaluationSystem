@@ -13,10 +13,10 @@ const Dashboard = () => {
     switch (user.role) {
       case 'student':
         return <Navigate to="/student" replace />
-      case 'lecturer':
+      case 'instructor':
         return <Navigate to="/lecturer" replace />
-      case 'head':
-        return <Navigate to="/head" replace />
+      case 'admin':
+        return <Navigate to="/lecturer" replace /> // Admin can use lecturer dashboard for now
       default:
         return <Navigate to="/login" replace />
     }

@@ -8,11 +8,15 @@ const Login = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
 
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />
+  if (isAuthenticated && user) {
+    // Redirect to role-specific dashboard
+    const rolePath = user.role === 'instructor' ? 'instructor' : 
+                    user.role === 'admin' ? 'head' : 
+                    user.role === 'student' ? 'student' : '/'
+    return <Navigate to={`/${rolePath}`} replace />
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +26,7 @@ const Login = () => {
 
     try {
       await login(username, password)
-      navigate('/')
+      // Navigation will be handled by the useEffect/redirect above after user state updates
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.')
     } finally {
@@ -95,9 +99,9 @@ const Login = () => {
 
           <div className="text-sm text-secondary-600">
             <p className="font-medium">Demo Accounts:</p>
-            <p>Admin: admin / admin123</p>
-            <p>Lecturer: lecturer1 / lecturer123</p>
-            <p>Student: student1 / student123</p>
+            <p>Admin: admin / admin</p>
+            <p>Lecturer: lecturer / lecturer</p>
+            <p>Student: student / student</p>
           </div>
         </form>
       </div>

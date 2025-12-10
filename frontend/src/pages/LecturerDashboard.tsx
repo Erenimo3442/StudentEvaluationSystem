@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Card } from '../components/ui/Card'
 import { ChartWidget } from '../components/ui/ChartWidget'
+import FileUpload from '../components/FileUpload'
 import {
   ArrowUpTrayIcon,
   DocumentChartBarIcon,
@@ -13,11 +14,15 @@ import { Course } from '../types/index'
 const LecturerDashboard = () => {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
+  const [showFileUpload, setShowFileUpload] = useState(false)
+  const [uploadResult, setUploadResult] = useState<any>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const coursesRes = await coreService.getCourses()
+          
         setCourses(coursesRes.data)
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
@@ -125,9 +130,12 @@ const LecturerDashboard = () => {
             <h2 className="text-xl font-bold text-secondary-900">Course Management</h2>
             <p className="text-secondary-500">Manage outcome weightings and course settings</p>
           </div>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/30">
+          <button 
+            onClick={() => setShowFileUpload(!showFileUpload)}
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/30"
+          >
             <ArrowUpTrayIcon className="h-5 w-5" />
-            <span>Upload Weightings</span>
+            <span>Import Data</span>
           </button>
         </div>
 
@@ -152,6 +160,56 @@ const LecturerDashboard = () => {
           ))}
         </div>
       </div>
+
+      {/* Upload Results */}
+      {uploadResult && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-green-800 mb-3">Import Completed Successfully!</h3>
+          <div className="space-y-2">
+            <div>
+              <span className="font-medium text-green-700">Message:</span>
+              <span className="ml-2 text-green-600">{uploadResult.message}</span>
+            </div>
+            {uploadResult.results && (
+              <div>
+                <span className="font-medium text-green-700">Results:</span>
+                <div className="mt-2 space-y-1">
+                  {Object.entries(uploadResult.results.created || {}).map(([entity, count]: [string, any]) => (
+                    <div key={entity} className="text-sm text-green-600">
+                      • Created {count} {entity}
+                    </div>
+                  ))}
+                  {Object.entries(uploadResult.results.updated || {}).map(([entity, count]: [string, any]) => (
+                    <div key={entity} className="text-sm text-green-600">
+                      • Updated {count} {entity}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => setUploadResult(null)}
+            className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Upload Errors */}
+      {uploadError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-red-800 mb-3">Import Failed</h3>
+          <div className="text-red-600">{uploadError}</div>
+          <button
+            onClick={() => setUploadError(null)}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </div>
   )
 }

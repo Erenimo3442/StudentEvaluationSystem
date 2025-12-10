@@ -14,6 +14,7 @@ router.register(r'learning-outcomes', views.LearningOutcomeViewSet, basename='le
 router.register(r'lo-po-mappings', views.LearningOutcomeProgramOutcomeMappingViewSet, basename='lo-po-mapping')
 router.register(r'student-lo-scores', views.StudentLearningOutcomeScoreViewSet, basename='student-lo-score')
 router.register(r'student-po-scores', views.StudentProgramOutcomeScoreViewSet, basename='student-po-score')
+router.register(r'file-import', views.FileImportViewSet, basename='file-import')
 
 urlpatterns = [
     path('', include(router.urls)),

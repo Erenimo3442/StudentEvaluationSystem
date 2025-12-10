@@ -27,34 +27,54 @@ interface NavItem {
     roles?: string[]
 }
 
-const navigation: NavItem[] = [
-    { name: 'Dashboard', href: '/', icon: HomeIcon },
-    // Public routes
-    { name: 'Universities', href: '/universities', icon: AcademicCapIcon },
-    { name: 'Departments', href: '/departments', icon: BuildingLibraryIcon },
-    { name: 'Programs', href: '/programs', icon: BookOpenIcon },
-    { name: 'Courses', href: '/courses', icon: AcademicCapIcon },
-    // Protected routes
-    { name: 'Assessments', href: '/assessments', icon: DocumentTextIcon, roles: ['instructor', 'admin'] },
-    { name: 'Outcomes', href: '/outcomes', icon: ChartBarIcon, roles: ['instructor', 'admin'] },
-    { name: 'Students', href: '/students', icon: UsersIcon, roles: ['instructor', 'admin'] },
-    { name: 'Analytics', href: '/analytics', icon: ChartBarIcon, roles: ['instructor', 'admin'] },
-]
+const getNavigationForRole = (role: string | null): NavItem[] => {
+    if (!role) {
+        return [
+            { name: 'Dashboard', href: '/', icon: HomeIcon },
+        ]
+    }
+
+    const baseNavigation = [
+        { name: 'Dashboard', href: `/${role}`, icon: HomeIcon },
+        { name: 'Courses', href: `/${role}/courses`, icon: AcademicCapIcon },
+    ]
+
+    if (role === 'student') {
+        return [
+            ...baseNavigation,
+            { name: 'Analytics', href: `/${role}/analytics`, icon: ChartBarIcon, roles: ['student'] },
+        ]
+    }
+
+    if (role === 'instructor') {
+        return [
+            ...baseNavigation,
+            { name: 'Assessments', href: `/${role}/assessments`, icon: DocumentTextIcon, roles: ['instructor'] },
+            { name: 'Outcomes', href: `/${role}/outcomes`, icon: ChartBarIcon, roles: ['instructor'] },
+            { name: 'Students', href: `/${role}/students`, icon: UsersIcon, roles: ['instructor'] },
+            { name: 'Analytics', href: `/${role}/analytics`, icon: ChartBarIcon, roles: ['instructor'] },
+        ]
+    }
+
+    if (role === 'admin' || role === 'head') {
+        return [
+            ...baseNavigation,
+            { name: 'Assessments', href: `/${role}/assessments`, icon: DocumentTextIcon, roles: ['admin', 'head'] },
+            { name: 'Outcomes', href: `/${role}/outcomes`, icon: ChartBarIcon, roles: ['admin', 'head'] },
+            { name: 'Students', href: `/${role}/students`, icon: UsersIcon, roles: ['admin', 'head'] },
+            { name: 'Analytics', href: `/${role}/analytics`, icon: ChartBarIcon, roles: ['admin', 'head'] },
+        ]
+    }
+
+    return baseNavigation
+}
 
 export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
     const { user, logout } = useAuth()
     const location = useLocation()
     const navigate = useNavigate()
 
-    const filteredNavigation = navigation.filter(item => {
-        // If user is not logged in (guest)
-        if (!user) {
-            // Show only Dashboard
-            return item.name === 'Dashboard'
-        }
-        // If user is logged in, show items that match their role or have no role restriction
-        return !item.roles || item.roles.includes(user.role)
-    })
+    const navigation = getNavigationForRole(user?.role || null)
 
     return (
         <>
@@ -87,7 +107,7 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
 
                     {/* Navigation */}
                     <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-                        {filteredNavigation.map((item) => {
+                        {navigation.map((item: NavItem) => {
                             const isActive = location.pathname === item.href
                             return (
                                 <Link

@@ -4,7 +4,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
-  role: 'student' | 'lecturer' | 'head' | 'admin';
+  role: 'guest' | 'student' | 'instructor' | 'admin';
   staff_id?: string;
   student_id?: string;
   department?: string;
