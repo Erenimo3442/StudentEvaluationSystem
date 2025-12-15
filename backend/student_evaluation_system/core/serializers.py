@@ -6,6 +6,8 @@ from core.models import (
 )
 from evaluation.models import Assessment, StudentGrade, CourseEnrollment
 from users.models import CustomUser
+from typing import List, Dict, Any
+from drf_spectacular.utils import extend_schema_field
 
 class DepartmentSerializer(serializers.ModelSerializer):
     university = serializers.StringRelatedField()
@@ -46,15 +48,39 @@ class ProgramOutcomeSerializer(serializers.ModelSerializer):
         fields = ['id', 'code', 'description', 'department', 'term', 'created_at']
 
 class CourseSerializer(serializers.ModelSerializer):
-    department = DepartmentSerializer(read_only=True)
+    program = ProgramSerializer(read_only=True)
     term = TermSerializer(read_only=True)
-    instructors = serializers.StringRelatedField(many=True)
+    instructors = serializers.SerializerMethodField()
     
     class Meta:
         model = Course
-        fields = ['id', 'code', 'name', 'department', 'term', 'instructors', 'created_at']
+        fields = ['id', 'code', 'name', 'credits', 'program', 'term', 'instructors', 'created_at']
+    
+    @extend_schema_field(List[Dict[str, Any]])
+    def get_instructors(self, obj: Course) -> List[Dict[str, Any]]:
+        """Get instructor details including name, surname, and title."""
+        instructors_data = []
+        for user in obj.instructors.all():
+            try:
+                instructor_profile = user.instructor_profile
+                instructors_data.append({
+                    'id': user.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'title': instructor_profile.title if instructor_profile else ''
+                })
+            except AttributeError:
+                # Handle case where user might not have instructor profile
+                instructors_data.append({
+                    'id': user.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'title': ''
+                })
+        return instructors_data
 
-class LearningOutcomeSerializer(serializers.ModelSerializer):
+class CoreLearningOutcomeSerializer(serializers.ModelSerializer):
+    """Renamed to avoid conflicts with evaluation app"""
     course = CourseSerializer(read_only=True)
     
     class Meta:
@@ -62,7 +88,7 @@ class LearningOutcomeSerializer(serializers.ModelSerializer):
         fields = ['id', 'code', 'description', 'course', 'created_at']
 
 class LearningOutcomeProgramOutcomeMappingSerializer(serializers.ModelSerializer):
-    learning_outcome = LearningOutcomeSerializer(read_only=True)
+    learning_outcome = CoreLearningOutcomeSerializer(read_only=True)
     program_outcome = ProgramOutcomeSerializer(read_only=True)
     
     class Meta:
@@ -71,7 +97,7 @@ class LearningOutcomeProgramOutcomeMappingSerializer(serializers.ModelSerializer
 
 class StudentLearningOutcomeScoreSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField()
-    learning_outcome = LearningOutcomeSerializer(read_only=True)
+    learning_outcome = CoreLearningOutcomeSerializer(read_only=True)
     
     class Meta:
         model = StudentLearningOutcomeScore
@@ -85,3 +111,13 @@ class StudentProgramOutcomeScoreSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProgramOutcomeScore
         fields = ['id', 'student', 'term', 'program_outcome', 'score']
+
+# Response serializers for file operations
+class FileImportResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    results = serializers.DictField()
+
+class FileValidationResponseSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    available_sheets = serializers.ListField(child=serializers.CharField())
+    file_info = serializers.DictField()

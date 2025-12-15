@@ -1,9 +1,11 @@
 import React, { useContext, createContext, useEffect, useState, ReactNode } from 'react'
-import { User } from '../types/index'
-import { authService } from '../services/api'
+import { useUsersAuthLoginCreate, useUsersAuthMeRetrieve } from '../api/generated/authentication/authentication'
+import { useQueryClient } from 'react-query'
+import { CustomUser } from '../api/model/customUser'
+import { TokenResponse } from '../api/model/tokenResponse'
 
 interface AuthContextType {
-  user: User | null
+  user: CustomUser | null
   login: (username: string, password: string) => Promise<void>
   logout: () => void
   isLoading: boolean
@@ -25,50 +27,81 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<CustomUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const queryClient = useQueryClient()
+
+  // Check if user is authenticated on mount
+  const { data: currentUser, isLoading: userLoading, error: userError } = useUsersAuthMeRetrieve({
+    query: {
+      enabled: !!localStorage.getItem('access_token'),
+      retry: false,
+      onError: () => {
+        // Token is invalid, clear it
+        logout()
+      }
+    }
+  })
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      const token = localStorage.getItem('access_token')
-      if (token) {
-        try {
-          const currentUser = await authService.getCurrentUser()
-          setUser(currentUser)
-        } catch (error) {
-          // Token is invalid, clear it
-          authService.logout()
-        }
-      }
+    if (currentUser) {
+      setUser(currentUser)
+    }
+    if (!userLoading) {
       setIsLoading(false)
     }
+  }, [currentUser, userLoading])
 
-    initializeAuth()
-  }, [])
+  // Create a custom login mutation that accepts password
+  const loginMutation = useUsersAuthLoginCreate({
+    mutation: {
+      onSuccess: (data: TokenResponse) => {
+        // Store tokens
+        localStorage.setItem('access_token', data.access)
+        localStorage.setItem('refresh_token', data.refresh)
+        
+        // Invalidate and refetch user data
+        queryClient.invalidateQueries(['/api/users/auth/me/'])
+      },
+      onError: (error) => {
+        // Let the calling component handle the error
+        throw error
+      }
+    }
+  })
 
   const login = async (username: string, password: string) => {
     try {
-      // 1. Login to get tokens
-      await authService.login({ username, password })
-
-      // 2. Fetch user details
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
+      // Create login data - we need to cast to include password since the type doesn't have it
+      const loginData = { 
+        username, 
+        email: '', // Required field but not used for login
+        password: password // This will be sent in the request
+      } as CustomUser & { password: string }
+      
+      await loginMutation.mutateAsync({ data: loginData })
     } catch (error) {
       throw error
     }
   }
 
   const logout = () => {
-    authService.logout()
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     setUser(null)
+    
+    // Clear all cached queries
+    queryClient.clear()
+    
+    // Redirect to login page
+    window.location.href = '/login'
   }
 
   const value: AuthContextType = {
     user,
     login,
     logout,
-    isLoading,
+    isLoading: isLoading || loginMutation.isLoading,
     isAuthenticated: !!user,
   }
 

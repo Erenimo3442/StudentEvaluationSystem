@@ -3,6 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema_view, extend_schema
+from .services.file_import import FileImportService
+from .services.file_import import FileImportError
+from .services.validation import AssignmentScoreValidator
+from rest_framework import serializers
 
 from .models import (
     University, Department, DegreeLevel, Program, Term,
@@ -13,12 +17,18 @@ from .models import (
 from .serializers import (
     UniversitySerializer, DepartmentSerializer, DegreeLevelSerializer,
     ProgramSerializer, TermSerializer, CourseSerializer,
-    ProgramOutcomeSerializer, LearningOutcomeSerializer,
+    ProgramOutcomeSerializer, CoreLearningOutcomeSerializer,
     LearningOutcomeProgramOutcomeMappingSerializer,
-    StudentLearningOutcomeScoreSerializer, StudentProgramOutcomeScoreSerializer
+    StudentLearningOutcomeScoreSerializer, StudentProgramOutcomeScoreSerializer,
+    FileImportResponseSerializer, FileValidationResponseSerializer
 )
 from users.models import StudentProfile
 from users.serializers import StudentProfileSerializer
+
+# Dummy serializer for import ViewSets that only use custom actions
+class DummyImportSerializer(serializers.Serializer):
+    """Dummy serializer for import ViewSets that only use custom actions."""
+    pass
 
 @extend_schema_view(
     list=extend_schema(tags=['Academic Structure']),
@@ -78,7 +88,7 @@ class TermViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def active(self, request):
-        """Get the currently active term."""
+        """Get currently active term."""
         active_term = Term.objects.filter(is_active=True).first()
         if active_term:
             serializer = self.get_serializer(active_term)
@@ -111,7 +121,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         """Get all learning outcomes for this course."""
         course = self.get_object()
         outcomes = course.learning_outcomes.all()
-        serializer = LearningOutcomeSerializer(outcomes, many=True)
+        serializer = CoreLearningOutcomeSerializer(outcomes, many=True)
         return Response(serializer.data)
 
 @extend_schema_view(
@@ -143,7 +153,7 @@ class ProgramOutcomeViewSet(viewsets.ModelViewSet):
 class LearningOutcomeViewSet(viewsets.ModelViewSet):
     """CRUD operations for learning outcomes."""
     queryset = LearningOutcome.objects.select_related('course', 'created_by').all()
-    serializer_class = LearningOutcomeSerializer
+    serializer_class = CoreLearningOutcomeSerializer
     
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -243,76 +253,159 @@ class ProgramOutcomeDetailView(generics.RetrieveAPIView):
     serializer_class = ProgramOutcomeSerializer
 
 
-@extend_schema_view(
-    create=extend_schema(tags=['File Import']),
-)
-class FileImportViewSet(viewsets.GenericViewSet):
+class BaseFileImportViewSet(viewsets.GenericViewSet):
     """
-    ViewSet for handling file imports.
-    
-    This endpoint allows bulk import of data through various file formats.
-    Supports importing students, courses, assessments, and other entities.
-    Uses modular parser system to support multiple file formats (Excel, CSV, etc.).
+    Base ViewSet for handling file imports with common functionality.
     """
     parser_classes = [MultiPartParser, FormParser]
+    serializer_class = DummyImportSerializer # Placeholder serializer
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.file_service = None
     
-    @action(detail=False, methods=['get', 'post'], url_path='upload')
-    def upload_assignments(self, request):
+    def _initialize_service(self, file_obj):
+        """Initialize file import service with uploaded file."""
+        self.file_service = FileImportService(file_obj)
+        return self.file_service
+    
+    def _validate_file(self, file_obj):
+        """Validate uploaded file format."""
+        self._initialize_service(file_obj)
+        self.file_service.validate_file()
+        return self.file_service
+    
+    def _get_course_by_code_and_term(self, course_code: str, term_id: int):
         """
-        Upload assignment scores from a file, for a specific course.
+        Get course by code and term with proper error handling.
         
-        GET: Display upload form interface
-        POST: Process the uploaded file
+        Args:
+            course_code (str): Course code
+            term_id (int): Term ID
+            
+        Returns:
+            Course: Course object
+            
+        Raises:
+            Response: HTTP 400 if course not found
+        """
+        try:
+            return Course.objects.get(code=course_code, term_id=term_id)
+        except Course.DoesNotExist:
+            available_courses = Course.objects.filter(code=course_code).select_related('term')
+            if available_courses.exists():
+                terms = [f"{course.code} ({course.term.name})" for course in available_courses]
+                return Response(
+                    {
+                        'error': f'Course with code "{course_code}" found but not for specified term.',
+                        'available_terms': terms,
+                        'suggestion': 'Please check the term_id parameter or use one of the available terms listed above.'
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                return Response(
+                    {'error': f'Course with code "{course_code}" not found.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+
+@extend_schema_view(
+    upload=extend_schema(
+        summary="Upload and import assessment scores",
+        description="Upload a file to import student assessment scores for a specific course and term",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {'type': 'string', 'format': 'binary'},
+                    'sheet_name': {'type': 'string'}
+                },
+                'required': ['file']
+            }
+        },
+        responses={200: FileImportResponseSerializer, 400: dict},
+        tags=['File Import - Assessment Scores']
+    ),
+    validate=extend_schema(
+        summary="Validate assessment scores file",
+        description="Validate file format for assessment scores import",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {'type': 'string', 'format': 'binary'}
+                },
+                'required': ['file']
+            }
+        },
+        responses={200: FileValidationResponseSerializer, 400: dict},
+        tags=['File Import - Assessment Scores']
+    )
+)
+class AssignmentScoresImportViewSet(BaseFileImportViewSet):
+    """
+    ViewSet for handling assignment scores file imports (Excel format).
+    
+    This endpoint allows bulk import of student assignment scores from Excel format
+    with columns like 'öğrenci no', 'adı', 'soyadı', 'Midterm 1(%25)_0833AB', etc.
+    
+    IMPORTANT: Requires course_code and term_id as query parameters to identify the specific course.
+    """
+    
+    @action(detail=False, methods=['get', 'post'])
+    def upload(self, request):
+        """
+        Upload and process assignment scores file (Turkish format).
         
         Expected request format:
-        - file: File (.xlsx, .xls, .csv, etc.)
-        - import_type: Type of import (students, courses, assessments, etc.)
-        - sheet_name: Name of the sheet/section to import from (optional, uses default)
+        - GET/POST /api/core/file-import/assignment-scores/upload/?course_code=MATH101&term_id=3
+        - file: File (.xlsx, .xls) in multipart/form-data
+        
+        Query Parameters (Required):
+        - course_code: Code of the course for which scores are being imported
+        - term_id: ID of the academic term for which scores are being imported
+        
+        Expected Excel Columns:
+        - 'öğrenci no' or 'No_0833AB': Student ID
+        - 'adı' or 'Adı_0833AB': Student first name
+        - 'soyadı' or 'Soyadı_0833AB': Student last name
+        - Assessment columns with pattern: 'AssessmentName(%weight)_0833AB'
+          Examples: 'Midterm 1(%25)_0833AB', 'Project(%40)_0833AB'
         
         Returns:
             dict: Import results with created/updated counts and any errors
         """
         if request.method == 'GET':
             return Response({
-                'message': 'File Upload Endpoint',
-                'description': 'POST a file here to import data. Use multipart/form-data.',
-                'required_fields': {
-                    'file': 'File to upload (.xlsx, .xls, .csv)',
-                    'import_type': 'Type of import (auto, students, courses, assessments, grades, learning_outcomes, program_outcomes)',
-                    'sheet_name': 'Specific sheet name (optional)'
+                'message': 'Assignment Scores Upload Endpoint (Turkish Format)',
+                'description': 'POST a file here to import assignment scores from Turkish Excel format. Use multipart/form-data with query parameters.',
+                'required_query_parameters': {
+                    'course_code': 'Code of the course for which scores are being imported',
+                    'term_id': 'ID of the academic term for which scores are being imported'
                 },
+                'required_fields': {
+                    'file': 'File to upload (.xlsx, .xls) in Turkish Excel format'
+                },
+                'expected_columns': {
+                    'student_id': ['öğrenci no', 'No_0833AB', 'Öğrenci No_0833AB'],
+                    'first_name': ['adı', 'Adı_0833AB'],
+                    'last_name': ['soyadı', 'Soyadı_0833AB'],
+                    'assessment_columns': 'Pattern: AssessmentName(%weight)_0833AB (e.g., Midterm 1(%25)_0833AB, Project(%40)_0833AB)'
+                },
+                'example_usage': [
+                    'POST /api/core/file-import/assignment-scores/upload/?course_code=MATH101&term_id=3',
+                    'Content-Type: multipart/form-data',
+                    'file: <your_turkish_excel_file>'
+                ],
                 'example_curl': [
                     'curl -X POST \\',
+                    '  "http://localhost:8000/api/core/file-import/assignment-scores/upload/?course_code=MATH101&term_id=3" \\',
                     '  -H "Content-Type: multipart/form-data" \\',
-                    '  -F "file=@your_file.xlsx" \\',
-                    '  -F "import_type=auto" \\',
-                    '  http://localhost:8000/api/core/file-import/upload/'
-                ],
-                'supported_import_types': [
-                    'auto - Automatically detect and import all sheets',
-                    'students - Import student data',
-                    'courses - Import course data',
-                    'assessments - Import assessment data',
-                    'grades - Import student grades',
-                    'learning_outcomes - Import learning outcomes',
-                    'program_outcomes - Import program outcomes'
+                    '  -F "file=@assignment_scores_turkish.xlsx"'
                 ]
             })
         
-        # POST method implementation
-        """
-        Upload and process a file for data import.
-        
-        Expected request format:
-        - file: Excel file with assignments and scores
-        
-        Returns:
-            dict: Import results with created/updated counts and any errors
-        """
         try:
             # Validate file presence
             if 'file' not in request.FILES:
@@ -322,72 +415,133 @@ class FileImportViewSet(viewsets.GenericViewSet):
                 )
             
             file_obj = request.FILES['file']
-            course = request.data.get('course', None)
-            # Initialize file import service
-            from .services.file_import import FileImportService, FileImportError
-            self.file_service = FileImportService(file_obj)
             
-            # Validate file format
-            self.file_service.validate_file()
+            # Get required query parameters
+            course_code = request.query_params.get('course_code')
+            term_id = request.query_params.get('term_id')
             
-            # Determine import strategy
-            if import_type == 'auto':
-                # Auto-detect based on sheet/section names
-                results = self._auto_import()
-            else:
-                # Import specific type
-                results = self._import_specific_type(import_type, sheet_name)
+            if not course_code:
+                return Response(
+                    {
+                        'error': 'course_code query parameter is required',
+                        'example': 'Add ?course_code=MATH101&term_id=3 to your URL'
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not term_id:
+                return Response(
+                    {
+                        'error': 'term_id query parameter is required', 
+                        'example': 'Add ?course_code=MATH101&term_id=3 to your URL'
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            try:
+                term_id = int(term_id)
+            except ValueError:
+                return Response(
+                    {'error': 'term_id must be a valid integer'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate course and term exist
+            course = self._get_course_by_code_and_term(course_code, term_id)
+            if isinstance(course, Response):  # Error response
+                return course
+            
+            # Run validation first
+            validation_result = AssignmentScoreValidator.validate_complete(file_obj, course)
+            
+            if not validation_result.is_valid:
+                return Response({
+                    'error': 'Validation failed. Please fix the errors before uploading.',
+                    'is_valid': False,
+                    'errors': validation_result.errors,
+                    'warnings': validation_result.warnings,
+                    'suggestions': validation_result.suggestions,
+                    'validation_details': validation_result.validation_details
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Reset file position after validation
+            file_obj.seek(0)
+            
+            # Initialize and validate file
+            self._validate_file(file_obj)
+            
+            # Import assignment scores with validated course and term
+            results = self.file_service.import_assignment_scores(
+                course_code=course_code, 
+                term_id=term_id
+            )
             
             return Response({
-                'message': 'Import completed successfully',
-                'results': results
+                'message': f'Assignment scores imported successfully for course {course.code} ({course.term.name})',
+                'course_info': {
+                    'code': course.code,
+                    'name': course.name,
+                    'term': course.term.name
+                },
+                'results': results,
+                'validation_passed': True
             }, status=status.HTTP_200_OK)
             
-        except FileImportError as e:
+        except Exception as e:
+            error_type = 'FileImportError' if isinstance(e, FileImportError) else 'UnexpectedError'
             return Response({
                 'error': str(e),
+                'error_type': error_type,
                 'results': self.file_service.get_import_summary() if self.file_service else {}
-            }, status=status.HTTP_400_BAD_REQUEST)
-            
-        except Exception as e:
-            return Response({
-                'error': f'Unexpected error during import: {str(e)}',
-                'results': self.file_service.get_import_summary() if self.file_service else {}
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            }, status=status.HTTP_400_BAD_REQUEST if isinstance(e, FileImportError) else status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    @action(detail=False, methods=['get', 'post'], url_path='validate')
-    def validate_file(self, request):
+    @action(detail=False, methods=['get', 'post'])
+    def validate(self, request):
         """
-        Validate file format without importing data.
+        Validate assignment scores file format (Turkish format) without importing data.
         
-        GET: Display validation endpoint information
-        POST: Validate the uploaded file
+        Validates:
+        1. File structure: Excel format, max 10MB
+        2. Assignment names: Parses and checks against database
+        3. Students: Checks if students exist in database
+        
+        Query Parameters (Required):
+        - course_code: Code of the course for validation
+        - term_id: ID of the academic term for validation
         
         Returns:
-            dict: Available sheets/sections and validation results
+            dict: Comprehensive validation results
         """
         if request.method == 'GET':
             return Response({
-                'message': 'File Validation Endpoint',
-                'description': 'POST a file here to validate its format without importing data.',
+                'message': 'Assignment Scores Validation Endpoint (Turkish Format)',
+                'description': 'POST a file here to validate its format for assignment scores import from Turkish Excel format.',
+                'required_query_parameters': {
+                    'course_code': 'Code of the course (REQUIRED for validation)',
+                    'term_id': 'ID of the academic term (REQUIRED for validation)'
+                },
                 'required_fields': {
-                    'file': 'File to validate (.xlsx, .xls, .csv)'
+                    'file': 'File to validate (.xlsx, .xls) in Turkish Excel format'
+                },
+                'validates': [
+                    'File structure: Excel format, max 10MB',
+                    'Assignment names: Parses column headers and checks against database',
+                    'Students: Checks if student IDs exist in database'
+                ],
+                'expected_columns': {
+                    'student_id': ['öğrenci no', 'No_XXXXX', 'Öğrenci No_XXXXX'],
+                    'first_name': ['adı', 'Adı_XXXXX'],
+                    'last_name': ['soyadı', 'Soyadı_XXXXX'],
+                    'assessment_columns': 'Pattern: AssessmentName(%weight)_XXXXX'
                 },
                 'example_curl': [
                     'curl -X POST \\',
+                    '  "http://localhost:8000/api/core/file-import/assignment-scores/validate/?course_code=MATH101&term_id=3" \\',
                     '  -H "Content-Type: multipart/form-data" \\',
-                    '  -F "file=@your_file.xlsx" \\',
-                    '  http://localhost:8000/api/core/file-import/validate/'
+                    '  -F "file=@assignment_scores_turkish.xlsx"'
                 ]
             })
         
-        # POST method implementation
-        """
-        Validate file format without importing data.
-        
-        Returns:
-            dict: Available sheets/sections and validation results
-        """
         try:
             if 'file' not in request.FILES:
                 return Response(
@@ -397,104 +551,372 @@ class FileImportViewSet(viewsets.GenericViewSet):
             
             file_obj = request.FILES['file']
             
-            from .services.file_import import FileImportService, FileImportError
-            file_service = FileImportService(file_obj)
-            file_service.validate_file()
+            # Get required query parameters
+            course_code = request.query_params.get('course_code')
+            term_id = request.query_params.get('term_id')
+            
+            if not course_code:
+                return Response(
+                    {
+                        'error': 'course_code query parameter is required for validation',
+                        'example': 'Add ?course_code=MATH101&term_id=3 to your URL'
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if not term_id:
+                return Response(
+                    {
+                        'error': 'term_id query parameter is required for validation', 
+                        'example': 'Add ?course_code=MATH101&term_id=3 to your URL'
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            try:
+                term_id = int(term_id)
+            except ValueError:
+                return Response(
+                    {'error': 'term_id must be a valid integer'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate course and term exist
+            course = self._get_course_by_code_and_term(course_code, term_id)
+            if isinstance(course, Response):  # Error response
+                return course
+            
+            # Run comprehensive validation
+            validation_result = AssignmentScoreValidator.validate_complete(file_obj, course)
+            
+            response_data = {
+                'is_valid': validation_result.is_valid,
+                'course_info': {
+                    'code': course.code,
+                    'name': course.name,
+                    'term': course.term.name
+                },
+                'file_info': validation_result.validation_details.get('file_info', {}),
+                'validation_details': validation_result.validation_details
+            }
+            
+            if validation_result.errors:
+                response_data['errors'] = validation_result.errors
+            
+            if validation_result.warnings:
+                response_data['warnings'] = validation_result.warnings
+            
+            if validation_result.suggestions:
+                response_data['suggestions'] = validation_result.suggestions
+            
+            status_code = status.HTTP_200_OK if validation_result.is_valid else status.HTTP_400_BAD_REQUEST
+            return Response(response_data, status=status_code)
+            
+        except Exception as e:
+            error_msg = str(e) if isinstance(e, FileImportError) else f'Validation error: {str(e)}'
+            return Response({'error': error_msg, 'is_valid': False}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema_view(
+    upload=extend_schema(
+        summary="Upload and import learning outcomes",
+        description="Upload a file to import learning outcomes",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {'type': 'string', 'format': 'binary'},
+                },
+                'required': ['file']
+            }
+        },
+        responses={200: FileImportResponseSerializer, 400: dict},
+        tags=['File Import - Learning Outcomes']
+    ),
+    validate=extend_schema(
+        summary="Validate learning outcomes file",
+        description="Validate file format for learning outcomes import",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {'type': 'string', 'format': 'binary'}
+                },
+                'required': ['file']
+            }
+        },
+        responses={200: FileValidationResponseSerializer, 400: dict},
+        tags=['File Import - Learning Outcomes']
+    )
+)
+class LearningOutcomesImportViewSet(BaseFileImportViewSet):
+    """
+    ViewSet for handling learning outcomes file imports.
+    
+    This endpoint allows bulk import of learning outcomes through various file formats.
+    Uses modular parser system to support multiple file formats (Excel, CSV, etc.).
+    """
+    
+    @action(detail=False, methods=['get', 'post'])
+    def upload(self, request):
+        """
+        Upload and process learning outcomes file.
+        
+        Expected request format:
+        - file: File (.xlsx, .xls, .csv, etc.)
+        - sheet_name: Name of the sheet/section to import from (optional)
+        
+        Returns:
+            dict: Import results with created/updated counts and any errors
+        """
+        if request.method == 'GET':
+            return Response({
+                'message': 'Learning Outcomes Upload Endpoint',
+                'description': 'POST a file here to import learning outcomes. Use multipart/form-data.',
+                'required_fields': {
+                    'file': 'File to upload (.xlsx, .xls, .csv)',
+                    'sheet_name': 'Specific sheet name (optional, defaults to "learning_outcomes")'
+                },
+                'expected_columns': ['code', 'description', 'course_code'],
+                'example_curl': [
+                    'curl -X POST \\',
+                    '  -H "Content-Type: multipart/form-data" \\',
+                    '  -F "file=@learning_outcomes.xlsx" \\',
+                    '  http://localhost:8000/api/core/file-import/learning-outcomes/upload/'
+                ]
+            })
+        
+        try:
+            # Validate file presence
+            if 'file' not in request.FILES:
+                return Response(
+                    {'error': 'No file provided'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            file_obj = request.FILES['file']
+            sheet_name = request.data.get('sheet_name', 'learning_outcomes')
+            
+            # Initialize and validate file
+            self._validate_file(file_obj)
+            
+            # Import learning outcomes
+            results = self.file_service.import_learning_outcomes(sheet_name=sheet_name)
+            
+            return Response({
+                'message': 'Learning outcomes import completed successfully',
+                'results': results
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            error_type = 'FileImportError' if isinstance(e, FileImportError) else 'UnexpectedError'
+            return Response({
+                'error': str(e),
+                'error_type': error_type,
+                'results': self.file_service.get_import_summary() if self.file_service else {}
+            }, status=status.HTTP_400_BAD_REQUEST if isinstance(e, FileImportError) else status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get', 'post'])
+    def validate(self, request):
+        """
+        Validate learning outcomes file format without importing data.
+        
+        Returns:
+            dict: Available sheets/sections and validation results
+        """
+        if request.method == 'GET':
+            return Response({
+                'message': 'Learning Outcomes Validation Endpoint',
+                'description': 'POST a file here to validate its format for learning outcomes import.',
+                'required_fields': {
+                    'file': 'File to validate (.xlsx, .xls, .csv)'
+                },
+                'expected_columns': ['code', 'description', 'course_code'],
+                'example_curl': [
+                    'curl -X POST \\',
+                    '  -H "Content-Type: multipart/form-data" \\',
+                    '  -F "file=@learning_outcomes.xlsx" \\',
+                    '  http://localhost:8000/api/core/file-import/learning-outcomes/validate/'
+                ]
+            })
+        
+        try:
+            if 'file' not in request.FILES:
+                return Response(
+                    {'error': 'No file provided'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            file_obj = request.FILES['file']
+            file_service = self._validate_file(file_obj)
             
             available_sheets = file_service.get_available_sheets()
             
             return Response({
-                'message': 'File format is valid',
+                'message': 'Learning outcomes file format is valid',
                 'available_sheets': available_sheets,
                 'file_info': {
                     'name': file_obj.name,
                     'size': file_obj.size,
                     'format': file_service.detect_file_format()
-                }
+                },
+                'expected_columns': ['code', 'description', 'course_code']
             }, status=status.HTTP_200_OK)
             
-        except FileImportError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            from .services.file_import import FileImportError
+            error_msg = str(e) if isinstance(e, FileImportError) else f'Validation error: {str(e)}'
+            return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema_view(
+    upload=extend_schema(
+        summary="Upload and import program outcomes",
+        description="Upload a file to import program outcomes",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {'type': 'string', 'format': 'binary'},
+                    'sheet_name': {'type': 'string'}
+                },
+                'required': ['file']
+            }
+        },
+        responses={200: FileImportResponseSerializer, 400: dict},
+        tags=['File Import - Program Outcomes']
+    ),
+    validate=extend_schema(
+        summary="Validate program outcomes file",
+        description="Validate file format for program outcomes import",
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'file': {'type': 'string', 'format': 'binary'}
+                },
+                'required': ['file']
+            }
+        },
+        responses={200: FileValidationResponseSerializer, 400: dict},
+        tags=['File Import - Program Outcomes']
+    )
+)
+class ProgramOutcomesImportViewSet(BaseFileImportViewSet):
+    """
+    ViewSet for handling program outcomes file imports.
+    
+    This endpoint allows bulk import of program outcomes through various file formats.
+    Uses modular parser system to support multiple file formats (Excel, CSV, etc.).
+    """
+    
+    @action(detail=False, methods=['get', 'post'])
+    def upload(self, request):
+        """
+        Upload and process program outcomes file.
+        
+        Expected request format:
+        - file: File (.xlsx, .xls, .csv, etc.)
+        - sheet_name: Name of the sheet/section to import from (optional)
+        
+        Returns:
+            dict: Import results with created/updated counts and any errors
+        """
+        if request.method == 'GET':
+            return Response({
+                'message': 'Program Outcomes Upload Endpoint',
+                'description': 'POST a file here to import program outcomes. Use multipart/form-data.',
+                'required_fields': {
+                    'file': 'File to upload (.xlsx, .xls, .csv)',
+                    'sheet_name': 'Specific sheet name (optional, defaults to "program_outcomes")'
+                },
+                'expected_columns': ['code', 'description', 'program_code', 'term_name'],
+                'example_curl': [
+                    'curl -X POST \\',
+                    '  -H "Content-Type: multipart/form-data" \\',
+                    '  -F "file=@program_outcomes.xlsx" \\',
+                    '  http://localhost:8000/api/core/file-import/program-outcomes/upload/'
+                ]
+            })
+        
+        try:
+            # Validate file presence
+            if 'file' not in request.FILES:
+                return Response(
+                    {'error': 'No file provided'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            file_obj = request.FILES['file']
+            sheet_name = request.data.get('sheet_name', 'program_outcomes')
+            
+            # Initialize and validate file
+            self._validate_file(file_obj)
+            
+            # Import program outcomes
+            results = self.file_service.import_program_outcomes(sheet_name=sheet_name)
+            
+            return Response({
+                'message': 'Program outcomes import completed successfully',
+                'results': results
+            }, status=status.HTTP_200_OK)
             
         except Exception as e:
-            return Response(
-                {'error': f'Validation error: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            error_type = 'FileImportError' if isinstance(e, FileImportError) else 'UnexpectedError'
+            return Response({
+                'error': str(e),
+                'error_type': error_type,
+                'results': self.file_service.get_import_summary() if self.file_service else {}
+            }, status=status.HTTP_400_BAD_REQUEST if isinstance(e, FileImportError) else status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-    def _auto_import(self):
+    @action(detail=False, methods=['get', 'post'])
+    def validate(self, request):
         """
-        Automatically import all recognized sheets from the file.
+        Validate program outcomes file format without importing data.
         
         Returns:
-            dict: Combined import results
+            dict: Available sheets/sections and validation results
         """
-        available_sheets = self.file_service.get_available_sheets()
-        results = {'created': {}, 'updated': {}, 'errors': []}
+        if request.method == 'GET':
+            return Response({
+                'message': 'Program Outcomes Validation Endpoint',
+                'description': 'POST a file here to validate its format for program outcomes import.',
+                'required_fields': {
+                    'file': 'File to validate (.xlsx, .xls, .csv)'
+                },
+                'expected_columns': ['code', 'description', 'program_code', 'term_name'],
+                'example_curl': [
+                    'curl -X POST \\',
+                    '  -H "Content-Type: multipart/form-data" \\',
+                    '  -F "file=@program_outcomes.xlsx" \\',
+                    '  http://localhost:8000/api/core/file-import/program-outcomes/validate/'
+                ]
+            })
         
-        # Define import methods for different sheet types
-        import_methods = {
-            'students': self.file_service.import_students,
-            'courses': self.file_service.import_courses,
-            'assessments': self.file_service.import_assessments,
-            'grades': self.file_service.import_grades,
-            'learning_outcomes': self.file_service.import_learning_outcomes,
-            'program_outcomes': self.file_service.import_program_outcomes
-        }
-        
-        for sheet_name in available_sheets:
-            sheet_lower = sheet_name.lower()
+        try:
+            if 'file' not in request.FILES:
+                return Response(
+                    {'error': 'No file provided'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             
-            # Find matching import method
-            for key, method in import_methods.items():
-                if key in sheet_lower:
-                    try:
-                        sheet_result = method(sheet_name=sheet_name)
-                        
-                        # Merge results
-                        for key_type in ['created', 'updated']:
-                            if key_type in sheet_result:
-                                for entity, count in sheet_result[key_type].items():
-                                    if entity not in results[key_type]:
-                                        results[key_type][entity] = 0
-                                    results[key_type][entity] += count
-                        
-                        if 'errors' in sheet_result:
-                            results['errors'].extend(sheet_result['errors'])
-                            
-                    except Exception as e:
-                        results['errors'].append(f"Error importing sheet '{sheet_name}': {str(e)}")
-                    break
-        
-        return results
-    
-    def _import_specific_type(self, import_type, sheet_name):
-        """
-        Import a specific type of data from the file.
-        
-        Args:
-            import_type (str): Type of import (students, courses, etc.)
-            sheet_name (str): Name of the sheet/section to import from
+            file_obj = request.FILES['file']
+            file_service = self._validate_file(file_obj)
             
-        Returns:
-            dict: Import results
-        """
-        from .services.file_import import FileImportError
-        
-        import_methods = {
-            'students': self.file_service.import_students,
-            'courses': self.file_service.import_courses,
-            'assessments': self.file_service.import_assessments,
-            'grades': self.file_service.import_grades,
-            'learning_outcomes': self.file_service.import_learning_outcomes,
-            'program_outcomes': self.file_service.import_program_outcomes
-        }
-        
-        if import_type not in import_methods:
-            raise FileImportError(f"Unsupported import type: {import_type}")
-        
-        # Use provided sheet name or default
-        if not sheet_name:
-            sheet_name = import_type
-        
-        return import_methods[import_type](sheet_name=sheet_name)
+            available_sheets = file_service.get_available_sheets()
+            
+            return Response({
+                'message': 'Program outcomes file format is valid',
+                'available_sheets': available_sheets,
+                'file_info': {
+                    'name': file_obj.name,
+                    'size': file_obj.size,
+                    'format': file_service.detect_file_format()
+                },
+                'expected_columns': ['code', 'description', 'program_code', 'term_name']
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            from .services.file_import import FileImportError
+            error_msg = str(e) if isinstance(e, FileImportError) else f'Validation error: {str(e)}'
+            return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)

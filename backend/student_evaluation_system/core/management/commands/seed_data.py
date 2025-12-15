@@ -183,8 +183,8 @@ class Command(BaseCommand):
 
     def create_courses(self, program, term, instructor, count=6):
         course_names = [
-            'Data Structures', 'Algorithms', 'Database Systems',
-            'Operating Systems', 'Computer Networks', 'Software Engineering'
+            'Artificial Intelligence', 'Algorithms 1', 'Data Systems',
+            'Operating Systems', 'Computer Networks', 'Microcontrollers'
         ]
         courses = []
         
@@ -250,15 +250,15 @@ class Command(BaseCommand):
                 )
 
     def create_assessments(self, course, count=4):
-        assessment_types = ['midterm', 'final', 'quiz', 'assignment']
+        assessment_types = ['midterm', 'final', 'attendance', 'homeworks']
         assessments = []
         
         # Weights must sum to 1.0
-        weights = [0.25, 0.35, 0.15, 0.25]  # Midterm, Final, Quiz, Assignment
+        weights = [0.25, 0.35, 0.15, 0.25]  # Midterm, Final, Attendance, Homeworks
         
         for i in range(count):
             assessment, _ = Assessment.objects.get_or_create(
-                name=f'{assessment_types[i].title()} - {course.code}',
+                name=f'{assessment_types[i].title()}',
                 course=course,
                 defaults={
                     'assessment_type': assessment_types[i],

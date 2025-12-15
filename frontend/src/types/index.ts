@@ -65,10 +65,32 @@ export interface Course {
     name: string;
     is_active: boolean;
   };
-  instructors?: string[];
+  instructors?: User[];
   created_at?: string;
   updated_at?: string;
   course_analytics?: CourseAnalytics;
+}
+
+export interface LearningOutcome {
+  id: number;
+  code: string;
+  description: string;
+  course: number;
+  created_by?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Assessment {
+  id: number;
+  title: string;
+  description?: string;
+  course: number;
+  max_score: number;
+  weight: number;
+  due_date?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Enrollment {

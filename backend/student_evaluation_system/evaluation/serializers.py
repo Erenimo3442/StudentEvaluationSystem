@@ -3,7 +3,8 @@ from .models import Assessment, AssessmentLearningOutcomeMapping, StudentGrade, 
 from core.models import Course, LearningOutcome
 from users.models import CustomUser
 
-class LearningOutcomeSerializer(serializers.ModelSerializer):
+class EvaluationLearningOutcomeSerializer(serializers.ModelSerializer):
+    """Learning Outcome serializer for evaluation app to avoid conflicts"""
     course = serializers.StringRelatedField()
     
     class Meta:
@@ -12,7 +13,7 @@ class LearningOutcomeSerializer(serializers.ModelSerializer):
 
 class AssessmentLearningOutcomeMappingSerializer(serializers.ModelSerializer):
     """Nested inside AssessmentSerializer"""
-    learning_outcome = LearningOutcomeSerializer(read_only=True)
+    learning_outcome = EvaluationLearningOutcomeSerializer(read_only=True)
     learning_outcome_id = serializers.PrimaryKeyRelatedField(
         queryset=LearningOutcome.objects.all(),
         source='learning_outcome',

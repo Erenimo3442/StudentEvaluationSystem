@@ -30,19 +30,24 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Auth services are now handled by Orval-generated hooks in useAuth.ts
+// authService is deprecated - use useAuth hook instead
 export const authService = {
   login: async (credentials: LoginCredentials) => {
+    console.warn('authService.login is deprecated. Use useAuth hook instead.')
     const response = await api.post<AuthTokens>('/users/auth/login/', credentials)
     localStorage.setItem('access_token', response.data.access)
     localStorage.setItem('refresh_token', response.data.refresh)
     return response.data
   },
   logout: () => {
+    console.warn('authService.logout is deprecated. Use useAuth hook instead.')
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     // Optional: Call backend logout endpoint if it exists
   },
   getCurrentUser: async () => {
+    console.warn('authService.getCurrentUser is deprecated. Use useAuth hook instead.')
     const response = await api.get<User>('/users/auth/me/')
     return response.data
   }
@@ -61,8 +66,17 @@ export const coreService = {
     }
     return response
   },
-
-  getStudentLOScores: (studentId?: number) => api.get<LearningOutcomeScore[]>('/core/student-lo-scores/', { params: { student: studentId } }),
+  getCourse: (courseId: number) => api.get<Course>(`/core/courses/${courseId}/`),
+  getCourseLearningOutcomes: (courseId: number) => api.get(`/core/courses/${courseId}/learning_outcomes/`),
+  getStudentLOScores: async (studentId?: number, courseId?: number) => {
+    const response = await api.get('/core/student-lo-scores/', { params: { student: studentId, course: courseId } })
+    // Handle paginated response
+    const data = response.data
+    if (data && typeof data === 'object' && 'results' in data) {
+      return { ...response, data: data.results }
+    }
+    return response
+  },
   getStudentPOScores: (studentId?: number) => api.get<ProgramOutcomeScore[]>('/core/student-po-scores/', { params: { student: studentId } }),
 }
 
@@ -71,12 +85,53 @@ export const evaluationService = {
 }
 
 export const fileImportService = {
-  uploadFile: async (file: File, course: string) => {
+  // Assignment Scores (Turkish Excel format)
+  uploadAssignmentScores: async (file: File, courseCode: string, termId: number) => {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('course', course)
 
-    const response = await api.post('/core/file-import/upload/', formData, {
+    const response = await api.post(
+      `/core/file-import/assignment-scores/upload/?course_code=${encodeURIComponent(courseCode)}&term_id=${termId}`, 
+      formData, 
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return response.data
+  },
+
+  validateAssignmentScores: async (file: File, courseCode: string, termId: number) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post(
+      `/core/file-import/assignment-scores/validate/?course_code=${encodeURIComponent(courseCode)}&term_id=${termId}`, 
+      formData, 
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return response.data
+  },
+
+  getAssignmentScoresUploadInfo: async () => {
+    const response = await api.get('/core/file-import/assignment-scores/upload/')
+    return response.data
+  },
+
+  // Legacy Assessment Scores
+  uploadAssessmentScores: async (file: File, sheetName?: string) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (sheetName) {
+      formData.append('sheet_name', sheetName)
+    }
+
+    const response = await api.post('/core/file-import/assessment-scores/upload/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -84,11 +139,11 @@ export const fileImportService = {
     return response.data
   },
 
-  validateFile: async (file: File) => {
+  validateAssessmentScores: async (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await api.post('/core/file-import/validate/', formData, {
+    const response = await api.post('/core/file-import/assessment-scores/validate/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -96,13 +151,72 @@ export const fileImportService = {
     return response.data
   },
 
-  getUploadInfo: async () => {
-    const response = await api.get('/core/file-import/upload/')
+  getAssessmentScoresUploadInfo: async () => {
+    const response = await api.get('/core/file-import/assessment-scores/upload/')
     return response.data
   },
 
-  getValidateInfo: async () => {
-    const response = await api.get('/core/file-import/validate/')
+  uploadLearningOutcomes: async (file: File, sheetName?: string) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (sheetName) {
+      formData.append('sheet_name', sheetName)
+    }
+
+    const response = await api.post('/core/file-import/learning-outcomes/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
+  validateLearningOutcomes: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post('/core/file-import/learning-outcomes/validate/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
+  getLearningOutcomesUploadInfo: async () => {
+    const response = await api.get('/core/file-import/learning-outcomes/upload/')
+    return response.data
+  },
+
+  uploadProgramOutcomes: async (file: File, sheetName?: string) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    if (sheetName) {
+      formData.append('sheet_name', sheetName)
+    }
+
+    const response = await api.post('/core/file-import/program-outcomes/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
+  validateProgramOutcomes: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await api.post('/core/file-import/program-outcomes/validate/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
+  getProgramOutcomesUploadInfo: async () => {
+    const response = await api.get('/core/file-import/program-outcomes/upload/')
     return response.data
   },
 }

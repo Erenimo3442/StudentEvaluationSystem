@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -151,21 +152,28 @@ const StudentCourses = () => {
                 </div>
               </div>
               
-              {enrollment.grade ? (
-                <div className="mt-4 pt-4 border-t border-secondary-100">
-                  <div className="flex items-center justify-between">
+              <div className="mt-4 pt-4 border-t border-secondary-100">
+                {enrollment.grade ? (
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-secondary-600">Final Grade</span>
                     <Badge variant="success">{enrollment.grade}</Badge>
                   </div>
-                </div>
-              ) : (
-                <div className="mt-4 pt-4 border-t border-secondary-100">
-                  <div className="flex items-center justify-between">
+                ) : (
+                  <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-secondary-600">Status</span>
                     <Badge variant="info">In Progress</Badge>
                   </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <Link
+                    to={`/student/course/${enrollment.course.id}`}
+                    className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
+                  >
+                    <ChartBarIcon className="h-4 w-4" />
+                    View Details
+                  </Link>
                 </div>
-              )}
+              </div>
             </Card>
           ))}
         </div>

@@ -4,7 +4,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import CourseDetail from './pages/CourseDetail'
 import StudentDashboard from './pages/StudentDashboard'
-import LecturerDashboard from './pages/LecturerDashboard'
+import InstructorDashboard from './pages/InstructorDashboard'
 import HeadDashboard from './pages/HeadDashboard'
 import StudentCourses from './pages/StudentCourses'
 import InstructorCourses from './pages/InstructorCourses'
@@ -23,7 +23,7 @@ function App() {
         <Route path="student/course/:id" element={<CourseDetail />} />
         
         {/* Instructor routes */}
-        <Route path="instructor" element={<LecturerDashboard />} />
+        <Route path="instructor" element={<InstructorDashboard />} />
         <Route path="instructor/courses" element={<InstructorCourses />} />
         <Route path="instructor/course/:id" element={<CourseDetail />} />
         

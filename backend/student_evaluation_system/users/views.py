@@ -1,16 +1,24 @@
-from rest_framework import generics, viewsets, status
+from rest_framework import generics, viewsets, status, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from drf_spectacular.utils import extend_schema
 from .models import CustomUser, StudentProfile, InstructorProfile
 from .serializers import (
     CustomUserSerializer, 
     StudentProfileSerializer, 
     InstructorProfileSerializer
 )
+
+
+# Response serializers for authentication
+class TokenResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField()
+    user = CustomUserSerializer()
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -59,6 +67,17 @@ class InstructorProfileViewSet(viewsets.ModelViewSet):
 
 
 # Authentication Views
+@extend_schema(
+    summary="User login",
+    description="Authenticate user and return JWT tokens with user data",
+    request=CustomUserSerializer,
+    responses={
+        200: TokenResponseSerializer,
+        400: dict,
+        401: dict
+    },
+    tags=['Authentication']
+)
 class LoginView(APIView):
     """Login endpoint that returns JWT tokens and user data."""
     permission_classes = [AllowAny]
@@ -94,6 +113,15 @@ class LoginView(APIView):
         })
 
 
+@extend_schema(
+    summary="Get current user",
+    description="Retrieve information about the currently authenticated user",
+    responses={
+        200: CustomUserSerializer,
+        401: dict
+    },
+    tags=['Authentication']
+)
 class CurrentUserView(APIView):
     """Get current authenticated user."""
     permission_classes = [IsAuthenticated]

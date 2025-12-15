@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Card } from '../components/ui/Card'
 import { ChartWidget } from '../components/ui/ChartWidget'
-import FileUpload from '../components/FileUpload'
 import {
   ArrowUpTrayIcon,
   DocumentChartBarIcon,

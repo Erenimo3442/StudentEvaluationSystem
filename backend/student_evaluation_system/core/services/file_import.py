@@ -11,6 +11,7 @@ Supported import types:
 - Student Grades
 - Learning Outcomes
 - Program Outcomes
+- Assignment Scores (Turkish Excel format)
 
 Supported file formats:
 - Excel (.xlsx, .xls) - Current implementation
@@ -19,6 +20,7 @@ Supported file formats:
 """
 
 import pandas as pd
+import re
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
@@ -69,7 +71,7 @@ class FileParser(ABC):
     @abstractmethod
     def get_sheet_names(self, file_obj) -> List[str]:
         """
-        Get list of available sheets/data sections in the file.
+        Get list of available sheets/data sections in file.
         
         Args:
             file_obj: Uploaded file object
@@ -97,13 +99,16 @@ class FileParser(ABC):
 class ExcelParser(FileParser):
     """Parser for Excel files (.xlsx, .xls)."""
     
+    # Maximum file size: 10MB
+    MAX_FILE_SIZE = 10 * 1024 * 1024
+    
     def validate_file(self, file_obj) -> bool:
         """Validate Excel file format."""
         if not file_obj.name.endswith(('.xlsx', '.xls')):
             raise FileImportError("File must be an Excel file (.xlsx or .xls)")
         
-        if file_obj.size > 10 * 1024 * 1024 * 5:  # 50MB limit
-            raise FileImportError("File size must be less than 50MB")
+        if file_obj.size > self.MAX_FILE_SIZE:
+            raise FileImportError(f"File size must be less than {self.MAX_FILE_SIZE // (1024*1024)}MB. Your file is {file_obj.size / (1024*1024):.2f}MB")
         
         return True
     
@@ -115,13 +120,13 @@ class ExcelParser(FileParser):
         except Exception as e:
             raise FileImportError(f"Error reading Excel file: {str(e)}")
     
-    def parse_sheet(self, file_obj, sheet_name: str) -> pd.DataFrame:
+    def parse_sheet(self, file_obj) -> pd.DataFrame:
         """Parse Excel sheet into DataFrame."""
         try:
             workbook = pd.ExcelFile(file_obj)
-            return pd.read_excel(workbook, sheet_name=sheet_name)
+            return pd.read_excel(workbook)
         except Exception as e:
-            raise FileImportError(f"Error parsing sheet '{sheet_name}': {str(e)}")
+            raise FileImportError(f"Error parsing file: {str(e)}")
 
 
 class CSVParser(FileParser):
@@ -159,23 +164,21 @@ class FileImportService:
     
     # Expected column mappings for different data types
     REQUIRED_COLUMNS = {
-        'students': ['username', 'email', 'first_name', 'last_name', 'student_id'],
-        'courses': ['code', 'name', 'credits', 'program_code', 'term_name'],
-        'assessments': ['name', 'course_code', 'assessment_type', 'total_score', 'weight'],
-        'grades': ['student_id', 'assessment_name', 'score'],
+        'assessment_scores': ['student_id', 'assessment_name', 'score'],
         'learning_outcomes': ['code', 'description', 'course_code'],
-        'program_outcomes': ['code', 'description', 'program_code', 'term_name']
+        'program_outcomes': ['code', 'description', 'program_code', 'term_name'],
+        'assignment_scores': ['öğrenci no', 'adı', 'soyadı']
     }
     
     # Available parsers for different file formats
     PARSERS = {
         'excel': ExcelParser,
-        'csv': CSVParser,
+        'csv': CSVParser
     }
     
     def __init__(self, file_obj):
         """
-        Initialize the service with an uploaded file.
+        Initialize service with an uploaded file.
         
         Args:
             file_obj: Uploaded file object containing data
@@ -204,9 +207,9 @@ class FileImportService:
         else:
             raise FileImportError(f"Unsupported file format: {file_extension}")
     
-    def validate_file(self):
+    def validate_file(self) -> bool:
         """
-        Validate the uploaded file format and structure.
+        Validate uploaded file format and structure.
         
         Returns:
             bool: True if file is valid
@@ -233,240 +236,25 @@ class FileImportService:
                 raise
             raise FileImportError(f"Invalid file: {str(e)}")
     
-    def get_available_sheets(self) -> List[str]:
-        """
-        Get list of available sheets/sections in the file.
-        
-        Returns:
-            List[str]: Available sheet/section names
-        """
-        if not self.parser:
-            raise FileImportError("File not validated. Call validate_file() first.")
-        
-        return self.parser.get_sheet_names(self.file_obj)
-    
-    def import_students(self, sheet_name='students'):
-        """
-        Import student data from file sheet/section.
-        
-        Args:
-            sheet_name (str): Name of the sheet/section containing student data
-            
-        Returns:
-            dict: Import results with created/updated counts
-        """
-        try:
-            df = self.parser.parse_sheet(self.file_obj, sheet_name)
-            
-            # Validate required columns
-            self._validate_required_columns(df, 'students')
-            
-            created_count = 0
-            updated_count = 0
-            
-            with transaction.atomic():
-                for _, row in df.iterrows():
-                    try:
-                        # Clean data
-                        username = str(row['username']).strip().lower()
-                        email = str(row['email']).strip().lower()
-                        first_name = str(row['first_name']).strip()
-                        last_name = str(row['last_name']).strip()
-                        student_id = str(row['student_id']).strip()
-                        
-                        # Get or create user
-                        user, created = User.objects.get_or_create(
-                            username=username,
-                            defaults={
-                                'email': email,
-                                'first_name': first_name,
-                                'last_name': last_name,
-                                'role': 'student'
-                            }
-                        )
-                        
-                        if not created:
-                            # Update existing user
-                            user.email = email
-                            user.first_name = first_name
-                            user.last_name = last_name
-                            user.save()
-                            updated_count += 1
-                        else:
-                            created_count += 1
-                        
-                        # Create student profile if not exists
-                        from users.models import StudentProfile
-                        StudentProfile.objects.get_or_create(
-                            user=user,
-                            defaults={'student_id': student_id}
-                        )
-                        
-                    except Exception as e:
-                        self.import_results['errors'].append(
-                            f"Error importing student {row.get('username', 'unknown')}: {str(e)}"
-                        )
-                        continue
-            
-            self.import_results['created']['students'] = created_count
-            self.import_results['updated']['students'] = updated_count
-            
-            return self.import_results
-            
-        except Exception as e:
-            raise FileImportError(f"Error importing students: {str(e)}")
-    
-    def import_courses(self, sheet_name='courses'):
-        """
-        Import course data from file sheet/section.
-        
-        Args:
-            sheet_name (str): Name of the sheet/section containing course data
-            
-        Returns:
-            dict: Import results with created/updated counts
-        """
-        try:
-            df = self.parser.parse_sheet(self.file_obj, sheet_name)
-            
-            # Validate required columns
-            self._validate_required_columns(df, 'courses')
-            
-            created_count = 0
-            updated_count = 0
-            
-            with transaction.atomic():
-                for _, row in df.iterrows():
-                    try:
-                        # Get related objects
-                        program = self._get_program_by_code(str(row['program_code']).strip())
-                        term = self._get_term_by_name(str(row['term_name']).strip())
-                        
-                        # Clean data
-                        code = str(row['code']).strip().upper()
-                        name = str(row['name']).strip()
-                        credits = int(row['credits'])
-                        
-                        # Create or update course
-                        course, created = Course.objects.get_or_create(
-                            code=code,
-                            program=program,
-                            term=term,
-                            defaults={
-                                'name': name,
-                                'credits': credits
-                            }
-                        )
-                        
-                        if not created:
-                            # Update existing course
-                            course.name = name
-                            course.credits = credits
-                            course.save()
-                            updated_count += 1
-                        else:
-                            created_count += 1
-                            
-                    except Exception as e:
-                        self.import_results['errors'].append(
-                            f"Error importing course {row.get('code', 'unknown')}: {str(e)}"
-                        )
-                        continue
-            
-            self.import_results['created']['courses'] = created_count
-            self.import_results['updated']['courses'] = updated_count
-            
-            return self.import_results
-            
-        except Exception as e:
-            raise FileImportError(f"Error importing courses: {str(e)}")
-    
-    def import_assessments(self, sheet_name='assessments'):
-        """
-        Import assessment data from file sheet/section.
-        
-        Args:
-            sheet_name (str): Name of the sheet/section containing assessment data
-            
-        Returns:
-            dict: Import results with created/updated counts
-        """
-        try:
-            df = self.parser.parse_sheet(self.file_obj, sheet_name)
-            
-            # Validate required columns
-            self._validate_required_columns(df, 'assessments')
-            
-            created_count = 0
-            updated_count = 0
-            
-            with transaction.atomic():
-                for _, row in df.iterrows():
-                    try:
-                        # Get course
-                        course = self._get_course_by_code(str(row['course_code']).strip())
-                        
-                        # Clean data
-                        name = str(row['name']).strip()
-                        assessment_type = str(row['assessment_type']).strip().lower()
-                        total_score = float(row['total_score'])
-                        weight = float(row['weight'])
-                        
-                        # Validate assessment type
-                        valid_types = [choice[0] for choice in Assessment.ASSESSMENT_TYPES]
-                        if assessment_type not in valid_types:
-                            raise ValidationError(f"Invalid assessment type: {assessment_type}")
-                        
-                        # Create or update assessment
-                        assessment, created = Assessment.objects.get_or_create(
-                            name=name,
-                            course=course,
-                            defaults={
-                                'assessment_type': assessment_type,
-                                'total_score': total_score,
-                                'weight': weight
-                            }
-                        )
-                        
-                        if not created:
-                            # Update existing assessment
-                            assessment.assessment_type = assessment_type
-                            assessment.total_score = total_score
-                            assessment.weight = weight
-                            assessment.save()
-                            updated_count += 1
-                        else:
-                            created_count += 1
-                            
-                    except Exception as e:
-                        self.import_results['errors'].append(
-                            f"Error importing assessment {row.get('name', 'unknown')}: {str(e)}"
-                        )
-                        continue
-            
-            self.import_results['created']['assessments'] = created_count
-            self.import_results['updated']['assessments'] = updated_count
-            
-            return self.import_results
-            
-        except Exception as e:
-            raise FileImportError(f"Error importing assessments: {str(e)}")
-    
-    def import_grades(self, sheet_name='grades'):
+    def import_assessment_scores(self, course_code: str, term_id: int):
         """
         Import student grade data from file sheet/section.
         
         Args:
-            sheet_name (str): Name of the sheet/section containing grade data
+            course_code (str): Code of the course for which grades are being imported
+            term_id (int): ID of the academic term for which grades are being imported
             
         Returns:
             dict: Import results with created/updated counts
         """
         try:
-            df = self.parser.parse_sheet(self.file_obj, sheet_name)
+            df = self.parser.parse_sheet(self.file_obj)
+            course = self._get_course_by_code_and_term(course_code, term_id)
+            assessments = self._get_assessments_by_course(course)
             
             # Validate required columns
-            self._validate_required_columns(df, 'grades')
+            self._validate_required_columns(df, 'assessment_scores', assessments=assessments)
+            self._validate_students(df, course)
             
             created_count = 0
             updated_count = 0
@@ -514,12 +302,145 @@ class FileImportService:
         except Exception as e:
             raise FileImportError(f"Error importing grades: {str(e)}")
     
-    def import_learning_outcomes(self, sheet_name='learning_outcomes'):
+    def import_assignment_scores(self, course_code: str, term_id: int):
+        """
+        Import assignment scores from Turkish Excel format.
+        
+        Args:
+            course_code (str): Code of the course for which grades are being imported
+            term_id (int): ID of the academic term for which grades are being imported
+            
+        Returns:
+            dict: Import results with created/updated counts
+        """
+        try:
+            df = self.parser.parse_sheet(self.file_obj)
+            course = self._get_course_by_code_and_term(course_code, term_id)
+            
+            # Get assessments for this course and build lookup dict
+            course_assessments = Assessment.objects.filter(course=course)
+            assessment_lookup = {a.name.lower().strip(): a for a in course_assessments}
+            
+            if not course_assessments.exists():
+                raise FileImportError(f"No assessments found for course {course.code}. Please create assessments first.")
+            
+            # Validate required columns
+            self._validate_required_columns(df, 'assignment_scores')
+            
+            # Find student ID column
+            student_id_col = self._find_student_id_column(df.columns)
+            
+            # Extract assessment columns
+            assessment_columns = self._extract_assessment_columns(df.columns)
+            
+            if not assessment_columns:
+                raise FileImportError("No assessment score columns found in file")
+            
+            # Validate all assessments exist before importing
+            missing_assessments = []
+            for col_name, assessment_name in assessment_columns:
+                clean_name = self._clean_assessment_name(assessment_name)
+                if clean_name.lower().strip() not in assessment_lookup:
+                    missing_assessments.append(clean_name)
+            
+            if missing_assessments:
+                available = ', '.join([a.name for a in course_assessments])
+                raise FileImportError(
+                    f"Assessments not found in database: {', '.join(missing_assessments)}. "
+                    f"Available assessments: {available}"
+                )
+            
+            created_count = 0
+            updated_count = 0
+            skipped_count = 0
+            
+            with transaction.atomic():
+                for idx, row in df.iterrows():
+                    try:
+                        # Get student ID
+                        student_id = str(row[student_id_col]).strip()
+                        
+                        # Skip empty student IDs
+                        if not student_id or student_id.lower() == 'nan':
+                            skipped_count += 1
+                            continue
+                        
+                        # Get student user
+                        try:
+                            student_user = self._get_student_by_id(student_id)
+                        except FileImportError:
+                            self.import_results['errors'].append(
+                                f"Row {idx + 2}: Student '{student_id}' not found in database"
+                            )
+                            continue
+                        
+                        # Process each assessment column
+                        for col_name, assessment_name in assessment_columns:
+                            score = row[col_name]
+                            
+                            if pd.notna(score):
+                                try:
+                                    # Get assessment from lookup
+                                    clean_name = self._clean_assessment_name(assessment_name)
+                                    assessment = assessment_lookup[clean_name.lower().strip()]
+                                    
+                                    # Clean and validate score
+                                    score_float = float(score)
+                                    
+                                    if score_float < 0:
+                                        self.import_results['errors'].append(
+                                            f"Row {idx + 2}: Negative score {score_float} for {clean_name}"
+                                        )
+                                        continue
+                                    
+                                    if score_float > assessment.total_score:
+                                        self.import_results['errors'].append(
+                                            f"Row {idx + 2}: Score {score_float} exceeds total {assessment.total_score} for {clean_name}"
+                                        )
+                                        continue
+                                    
+                                    # Create or update grade
+                                    grade, created = StudentGrade.objects.update_or_create(
+                                        student=student_user,
+                                        assessment=assessment,
+                                        defaults={'score': score_float}
+                                    )
+                                    
+                                    if created:
+                                        created_count += 1
+                                    else:
+                                        updated_count += 1
+                                        
+                                except (ValueError, TypeError) as e:
+                                    self.import_results['errors'].append(
+                                        f"Row {idx + 2}: Invalid score '{score}' for {assessment_name}"
+                                    )
+                                    continue
+                            
+                    except Exception as e:
+                        self.import_results['errors'].append(
+                            f"Row {idx + 2}: Error processing row - {str(e)}"
+                        )
+                        continue
+            
+            self.import_results['created']['grades'] = created_count
+            self.import_results['updated']['grades'] = updated_count
+            self.import_results['skipped'] = skipped_count
+            self.import_results['total_rows'] = len(df)
+            
+            return self.import_results
+            
+        except Exception as e:
+            if isinstance(e, FileImportError):
+                raise
+            raise FileImportError(f"Error importing assignment scores: {str(e)}")
+    
+    def import_learning_outcomes(self, sheet_name: str = 'learning_outcomes'):
         """
         Import learning outcome data from file sheet/section.
         
         Args:
-            sheet_name (str): Name of the sheet/section containing learning outcome data
+            sheet_name (str): Name of sheet/section containing learning outcome data
             
         Returns:
             dict: Import results with created/updated counts
@@ -572,12 +493,12 @@ class FileImportService:
         except Exception as e:
             raise FileImportError(f"Error importing learning outcomes: {str(e)}")
     
-    def import_program_outcomes(self, sheet_name='program_outcomes'):
+    def import_program_outcomes(self, sheet_name: str = 'program_outcomes'):
         """
         Import program outcome data from file sheet/section.
         
         Args:
-            sheet_name (str): Name of the sheet/section containing program outcome data
+            sheet_name (str): Name of sheet/section containing program outcome data
             
         Returns:
             dict: Import results with created/updated counts
@@ -632,23 +553,188 @@ class FileImportService:
         except Exception as e:
             raise FileImportError(f"Error importing program outcomes: {str(e)}")
     
-    def _validate_required_columns(self, dataframe: pd.DataFrame, sheet_type: str):
+    def _extract_assessment_columns(self, columns):
         """
-        Validate that all required columns are present in the dataframe.
+        Extract assessment columns from Turkish Excel format.
+        
+        Column format examples:
+        - 'Midterm 1(%25)_0833AB' -> 'Midterm 1'
+        - 'Project(%40)_0833AB' -> 'Project'
+        - 'Attendance(%10)_0833AB' -> 'Attendance'
+        
+        We only look at the first word/part before any suffix like _0833AB.
+        Non-assessment columns are: No, Öğrenci No, Adı, Soyadı, Snf, Girme Durum, Harf Notu
+        """
+        assessment_columns = []
+        
+        # Known non-assessment column prefixes (case-insensitive)
+        non_assessment_prefixes = ['no', 'öğrenci no', 'adı', 'soyadı', 'snf', 'girme durum', 'harf notu']
+        
+        for col in columns:
+            col_str = str(col).strip()
+            
+            # Extract the first part before any suffix pattern (_XXXXXX)
+            # Split by underscore and take everything before the last part if it looks like a suffix
+            parts = col_str.split('_')
+            if len(parts) > 1:
+                # Check if last part looks like a suffix (alphanumeric code)
+                last_part = parts[-1]
+                if last_part.isalnum() and len(last_part) >= 4:
+                    # Reconstruct without the suffix
+                    base_name = '_'.join(parts[:-1])
+                else:
+                    base_name = col_str
+            else:
+                base_name = col_str
+            
+            # Extract assessment name by removing weight pattern like (%25)
+            assessment_name = re.sub(r'\(%?\d+%?\)', '', base_name).strip()
+            
+            # Check if this is a non-assessment column
+            is_non_assessment = False
+            for prefix in non_assessment_prefixes:
+                if assessment_name.lower().startswith(prefix.lower()):
+                    is_non_assessment = True
+                    break
+            
+            if not is_non_assessment and assessment_name:
+                assessment_columns.append((col_str, assessment_name))
+        
+        return assessment_columns
+    
+    def _clean_assessment_name(self, name):
+        """Clean assessment name by removing weight information."""
+        # Remove weight patterns like "(%25)", "(%40)", etc.
+        cleaned = re.sub(r'\(%\d+\)', '', name).strip()
+        return cleaned
+    
+    def _find_student_id_column(self, columns):
+        """Find the student ID column from Turkish column names."""
+        for col in columns:
+            col_str = str(col).lower().strip()
+            if 'öğrenci no' in col_str or 'no' in col_str:
+                return col
+        raise FileImportError("Student ID column not found. Expected columns containing 'öğrenci no'")
+    
+    def _validate_assessment_scores(self, dataframe: pd.DataFrame, course: Course, term: Term):
+        """
+        Validate that all required columns are present in dataframe for assessment scores.
+        
+        Args:
+            dataframe (pd.DataFrame): Data to validate
+            course (Course): Course to check assessments against
+            term (Term): Term to check assessments against
+        Raises:
+            FileImportError: If required columns are missing
+        """
+        try:
+            self._validate_required_columns(dataframe, 'assessment_scores', assessments=self._get_assessments_by_course(course))
+            self._validate_students(dataframe, course)
+        except Exception as e:
+            raise FileImportError(f"Validation error: {str(e)}")
+    
+    def _validate_required_columns(self, dataframe: pd.DataFrame, sheet_type: str, assessments:List[Assessment]=None):
+        """
+        Validate that all required columns are present in dataframe.
         
         Args:
             dataframe (pd.DataFrame): Data to validate
             sheet_type (str): Type of sheet to validate against
-            
+            assessments (List[Assessment], optional): List of assessments to validate against
         Raises:
             FileImportError: If required columns are missing
         """
-        required = self.REQUIRED_COLUMNS.get(sheet_type, [])
-        missing = [col for col in required if col not in dataframe.columns]
+        required_columns = self.REQUIRED_COLUMNS.get(sheet_type, [])
+        missing_columns = []
         
-        if missing:
+        # Check for each required column (case-insensitive partial match)
+        for required_col in required_columns:
+            found = False
+            for df_col in dataframe.columns:
+                if required_col.lower() in str(df_col).lower():
+                    found = True
+                    break
+            if not found:
+                missing_columns.append(required_col)
+
+        # Check for assessment names if applicable
+        if assessments:
+            assessment_names = [assessment.name.lower().strip() for assessment in assessments]
+            df_cols = [str(col).lower().strip() for col in dataframe.columns]
+
+            assessment_col_found = [False for _ in assessment_names]
+            df_col_found = [False for _ in df_cols]
+
+            for idx1, df_col in enumerate(dataframe.columns):
+                if df_col_found[idx1]:
+                    continue
+                for idx2, assessment_name in enumerate(assessment_names):
+                    if assessment_col_found[idx2]:
+                        continue
+                    if assessment_name == str(df_col).lower().strip():
+                        df_col_found[idx1] = True
+                        assessment_col_found[idx2] = True
+
+            if not all(assessment_col_found):
+                missing_columns.extend([assessments[i] for i, found in enumerate(assessment_col_found) if not found])
+            
+        if missing_columns:
             raise FileImportError(
-                f"Missing required columns in {sheet_type} sheet: {', '.join(missing)}"
+                f"Missing required columns for {sheet_type}: {', '.join(missing_columns)}. "
+                f"Found columns: {', '.join(dataframe.columns.tolist())}"
+            )
+    
+    def _validate_students(self, dataframe: pd.DataFrame, course: Course):
+        """
+        Validate that all students in the dataframe are enrolled in the course.
+        
+        Args:
+            dataframe (pd.DataFrame): Data to validate
+            course (Course): Course to check enrollments against
+            
+        Raises:
+            FileImportError: If any student is not enrolled in the course
+        """
+        student_ids = [str(sid).strip() for sid in dataframe.get('student_id', [])]
+        enrolled_students = CourseEnrollment.objects.filter(
+            course=course,
+            student__student_profile__student_id__in=student_ids
+        ).values_list('student__student_profile__student_id', flat=True)
+        
+        enrolled_student_ids = set(str(sid).strip() for sid in enrolled_students)
+        missing_students = [sid for sid in student_ids if sid not in enrolled_student_ids]
+        
+        if missing_students:
+            raise FileImportError(
+                f"The following students are not enrolled in course {course.code}: "
+                f"{', '.join(missing_students)}"
+            )
+    
+    def _validate_assignment_students(self, dataframe: pd.DataFrame, course: Course):
+        """
+        Validate that all students in the assignment dataframe are enrolled in the course.
+        
+        Args:
+            dataframe (pd.DataFrame): Data to validate
+            course (Course): Course to check enrollments against
+            
+        Raises:
+            FileImportError: If any student is not enrolled in the course
+        """
+        student_id_col = self._find_student_id_column(dataframe.columns)
+        student_ids = [str(sid).strip() for sid in dataframe[student_id_col].tolist()]
+        enrolled_students = CourseEnrollment.objects.filter(
+            course=course,
+            student__student_profile__student_id__in=student_ids
+        ).values_list('student__student_profile__student_id', flat=True)
+        
+        enrolled_student_ids = set(str(sid).strip() for sid in enrolled_students)
+        missing_students = [sid for sid in student_ids if sid not in enrolled_student_ids]
+        
+        if missing_students:
+            raise FileImportError(
+                f"The following students are not enrolled in course {course.code}: "
+                f"{', '.join(missing_students)}"
             )
     
     def _get_program_by_code(self, code: str):
@@ -673,6 +759,35 @@ class FileImportService:
         except Course.DoesNotExist:
             raise FileImportError(f"Course with code '{code}' not found")
     
+    def _get_course_by_code_and_term(self, course_code: str, term_id: int):
+        """
+        Get course by code and term with proper error handling.
+        
+        Args:
+            course_code (str): Course code
+            term_id (int): Term ID
+            
+        Returns:
+            Course: Course object
+            
+        Raises:
+            FileImportError: If course not found
+        """
+        try:
+            return Course.objects.get(code=course_code, term_id=term_id)
+        except Course.DoesNotExist:
+            # Check if course exists with different terms
+            available_courses = Course.objects.filter(code=course_code).select_related('term')
+            if available_courses.exists():
+                terms = [f"{course.code} ({course.term.name})" for course in available_courses]
+                raise FileImportError(
+                    f"Course with code '{course_code}' found but not for specified term. "
+                    f"Available terms: {', '.join(terms)}. "
+                    f"Please check the term_id parameter."
+                )
+            else:
+                raise FileImportError(f"Course with code '{course_code}' not found")
+    
     def _get_student_by_id(self, student_id: str):
         """Get student user by student_id, raise error if not found."""
         try:
@@ -682,12 +797,16 @@ class FileImportService:
         except StudentProfile.DoesNotExist:
             raise FileImportError(f"Student with ID '{student_id}' not found")
     
-    def _get_assessment_by_name(self, name: str):
+    def _get_assessment_by_name(self, assessment_name: str):
         """Get assessment by name, raise error if not found."""
         try:
-            return Assessment.objects.get(name=name)
+            return Assessment.objects.get(name=assessment_name)
         except Assessment.DoesNotExist:
-            raise FileImportError(f"Assessment with name '{name}' not found")
+            raise FileImportError(f"Assessment with name '{assessment_name}' not found")
+    
+    def _get_assessments_by_course(self, course: Course):
+        """Get all assessments for a course."""
+        return Assessment.objects.filter(course=course)
     
     def get_import_summary(self) -> Dict[str, Any]:
         """
