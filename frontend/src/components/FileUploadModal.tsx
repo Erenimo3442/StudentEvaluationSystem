@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { fileImportService } from '../services/api'
 
 // Validation result types
@@ -68,24 +68,30 @@ interface FileUploadModalProps {
   onError?: (error: string) => void
 }
 
-const FileUploadModal: React.FC<FileUploadModalProps> = ({ 
+const FileUploadModal: React.FC<FileUploadModalProps> = ({
   course,
   courseCode,
   termId,
-  isOpen, 
-  onClose, 
-  type, 
-  onUploadComplete, 
-  onError 
+  isOpen,
+  onClose,
+  type,
+  onUploadComplete,
+  onError
 }) => {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState<boolean>(false)
   const [validating, setValidating] = useState<boolean>(false)
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null)
   const [uploadInfo, setUploadInfo] = useState<any>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   React.useEffect(() => {
     if (isOpen) {
+      // Reset file input value
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+
       // Load upload info based on type when modal opens
       const getUploadInfo = () => {
         switch (type) {
@@ -99,7 +105,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
             return Promise.resolve(null)
         }
       }
-      
+
       getUploadInfo().then(setUploadInfo).catch(console.error)
       // Reset state
       setFile(null)
@@ -388,6 +394,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
                 Select File (.xlsx, .xls)
               </label>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={handleFileChange}

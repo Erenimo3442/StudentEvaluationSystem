@@ -1,58 +1,41 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
+import { useQuery } from 'react-query'
 import { useParams } from 'react-router-dom'
 import { coreService } from '../services/api'
-import { Course, LearningOutcome, LearningOutcomeScore } from '../types/index'
 import FileUploadModal from '../components/FileUploadModal'
 
 const CourseDetail = () => {
 const { id: courseId } = useParams<{ id: string }>()
-  const [course, setCourse] = useState<Course | null>(null)
-  const [learningOutcomes, setLearningOutcomes] = useState<LearningOutcome[]>([])
-  const [loScores, setLoScores] = useState<LearningOutcomeScore[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false)
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false)
+const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  useEffect(() => {
-    const fetchCourseData = async () => {
-      if (!courseId) return
+  const fetchCourseData = async () => {
+      if (!courseId) return null
       
-      setLoading(true)
-      setError(null)
-      
-      try {
-        // Fetch course details
-        const courseResponse = await coreService.getCourse(parseInt(courseId))
-        setCourse(courseResponse.data)
-        
-        // Fetch learning outcomes
-        const loResponse = await coreService.getCourseLearningOutcomes(parseInt(courseId))
-        setLearningOutcomes(loResponse.data)
-        
-        // Fetch LO scores (for current user or all students)
-        const loScoresResponse = await coreService.getStudentLOScores(undefined, parseInt(courseId))
-        setLoScores(loScoresResponse.data)
-        
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to load course data')
-      } finally {
-        setLoading(false)
+      const [courseRes, loRes, loScoresRes] = await Promise.all([
+        coreService.getCourse(parseInt(courseId)),
+        coreService.getCourseLearningOutcomes(parseInt(courseId)),
+        coreService.getStudentLOScores(undefined, parseInt(courseId)),
+      ])
+
+      return {
+        course: courseRes.data,
+        learningOutcomes: loRes.data,
+        loScores: loScoresRes.data,
       }
-    }
+  }
 
-    fetchCourseData()
-  }, [courseId])
+
+  const { data, isLoading, error, refetch } = useQuery(['course', courseId], fetchCourseData)
 
   const handleUploadComplete = (result: any) => {
     setNotification({
       type: 'success',
-      message: `Successfully imported ${result.results?.created?.students || 0} students and ${result.results?.created?.grades || 0} grades`
+      message: `Successfully imported ${result.results?.created?.grades || 0 + result.results?.updated?.grades || 0} grades`
     })
-    // Refresh data after upload
-    setTimeout(() => {
-      window.location.reload()
-    }, 2000)
+
+    // Refresh data without page reload
+    refetch()
   }
 
   const handleUploadError = (error: string) => {
@@ -63,30 +46,31 @@ const { id: courseId } = useParams<{ id: string }>()
   }
 
   const getInstructorNames = () => {
-    if (!course?.instructors || course.instructors.length === 0) {
+    if (!data?.course?.instructors || data.course.instructors.length === 0) {
       return 'Not assigned'
     }
-    return course.instructors.map(instructor => 
+    return data.course.instructors.map((instructor: any) =>
       `${instructor.first_name} ${instructor.last_name}`
     ).join(', ')
   }
 
   const getAverageScore = () => {
-    if (loScores.length === 0) return 0
-    const total = loScores.reduce((sum, score) => sum + score.score, 0)
-    return Math.round((total / loScores.length) * 100) / 100
+    if (!data?.loScores || data.loScores.length === 0) return 0
+    const total = data.loScores.reduce((sum: any, score: any) => sum + score.score, 0)
+    return Math.round((total / data.loScores.length) * 100) / 100
   }
 
   const getLOPerformance = (loCode: string) => {
-    const loScoresFiltered = loScores.filter(score => 
+    if (!data?.loScores) return 0
+    const loScoresFiltered = data.loScores.filter((score: any) =>
       score.learning_outcome.code === loCode
     )
     if (loScoresFiltered.length === 0) return 0
-    const total = loScoresFiltered.reduce((sum, score) => sum + score.score, 0)
+    const total = loScoresFiltered.reduce((sum: any, score: any) => sum + score.score, 0)
     return Math.round((total / loScoresFiltered.length) * 100) / 100
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg text-gray-600">Loading course details...</div>
@@ -97,12 +81,12 @@ const { id: courseId } = useParams<{ id: string }>()
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-        <div className="text-red-800">Error: {error}</div>
+        <div className="text-red-800">Error: {error instanceof Error ? error.message : 'An error occurred while loading course details'}</div>
       </div>
     )
   }
 
-  if (!course) {
+  if (!data?.course) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
         <div className="text-yellow-800">Course not found</div>
@@ -124,7 +108,7 @@ const { id: courseId } = useParams<{ id: string }>()
         <div className="flex justify-between items-start mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {course.code} - {course.name}
+              {data.course.code} - {data.course.name}
             </h1>
             {/*<p className="text-gray-600">
               {course.description || 'No description available'}
@@ -147,7 +131,7 @@ const { id: courseId } = useParams<{ id: string }>()
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Credits:</span>
-                <span className="font-medium">{course.credits}</span>
+                <span className="font-medium">{data.course.credits}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Instructors:</span>
@@ -155,12 +139,12 @@ const { id: courseId } = useParams<{ id: string }>()
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Learning Outcomes:</span>
-                <span className="font-medium">{learningOutcomes.length}</span>
+                <span className="font-medium">{data.learningOutcomes?.length || 0}</span>
               </div>
-              {course.term && (
+              {data.course.term && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Term:</span>
-                  <span className="font-medium">{course.term.name}</span>
+                  <span className="font-medium">{data.course.term.name}</span>
                 </div>
               )}
             </div>
@@ -177,11 +161,11 @@ const { id: courseId } = useParams<{ id: string }>()
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Scores:</span>
-                <span className="font-medium">{loScores.length}</span>
+                <span className="font-medium">{data.loScores?.length || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Course Level:</span>
-                <span className="font-medium capitalize">{course.level || 'undergraduate'}</span>
+                <span className="font-medium capitalize">{data.course.level || 'undergraduate'}</span>
               </div>
             </div>
           </div>
@@ -189,7 +173,7 @@ const { id: courseId } = useParams<{ id: string }>()
           <div className="bg-gray-50 p-4 rounded-lg">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Learning Outcomes</h3>
             <div className="space-y-2 max-h-24 overflow-y-auto">
-              {learningOutcomes.slice(0, 3).map((lo) => (
+              {data.learningOutcomes?.slice(0, 3).map((lo: any) => (
                 <div key={lo.id} className="flex justify-between text-sm">
                   <span className="text-gray-600">{lo.code}:</span>
                   <span className={`font-medium ${getLOPerformance(lo.code) >= 80 ? 'text-green-600' : getLOPerformance(lo.code) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
@@ -197,8 +181,8 @@ const { id: courseId } = useParams<{ id: string }>()
                   </span>
                 </div>
               ))}
-              {learningOutcomes.length > 3 && (
-                <div className="text-xs text-gray-500">+{learningOutcomes.length - 3} more</div>
+              {(data.learningOutcomes?.length || 0) > 3 && (
+                <div className="text-xs text-gray-500">+{(data.learningOutcomes?.length || 0) - 3} more</div>
               )}
             </div>
           </div>
@@ -210,7 +194,7 @@ const { id: courseId } = useParams<{ id: string }>()
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Learning Outcomes</h2>
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {learningOutcomes.map((lo) => (
+            {data.learningOutcomes?.map((lo: any) => (
               <div key={lo.id} className="border-l-4 border-blue-400 pl-4 py-2">
                 <div className="flex justify-between items-start">
                   <div>
@@ -226,7 +210,7 @@ const { id: courseId } = useParams<{ id: string }>()
                 </div>
               </div>
             ))}
-            {learningOutcomes.length === 0 && (
+            {!data.learningOutcomes || data.learningOutcomes.length === 0 && (
               <p className="text-gray-500 text-center py-4">No learning outcomes defined for this course</p>
             )}
           </div>
@@ -238,13 +222,13 @@ const { id: courseId } = useParams<{ id: string }>()
             <p className="text-center text-gray-600 mb-2">Performance Chart</p>
             <p className="text-center text-sm text-gray-500">Showing average performance across learning outcomes</p>
             <div className="mt-4 space-y-2">
-              {learningOutcomes.map((lo) => {
+              {data.learningOutcomes?.map((lo: any) => {
                 const performance = getLOPerformance(lo.code)
                 return (
                   <div key={lo.id} className="flex items-center space-x-3">
                     <span className="text-sm font-medium w-16">{lo.code}</span>
                     <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
-                      <div 
+                      <div
                         className={`h-6 rounded-full ${performance >= 80 ? 'bg-green-500' : performance >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
                         style={{ width: `${Math.min(performance, 100)}%` }}
                       />
@@ -255,7 +239,7 @@ const { id: courseId } = useParams<{ id: string }>()
                   </div>
                 )
               })}
-              {learningOutcomes.length === 0 && (
+              {!data.learningOutcomes || data.learningOutcomes.length === 0 && (
                 <p className="text-gray-500 text-center py-4">No data available</p>
               )}
             </div>
@@ -265,9 +249,9 @@ const { id: courseId } = useParams<{ id: string }>()
 
       {/* File Upload Modal */}
       <FileUploadModal
-        course={course.name}
-        courseCode={course.code}
-        termId={course.term?.id ?? 0}
+        course={data.course.name}
+        courseCode={data.course.code}
+        termId={data.course.term?.id ?? 0}
         isOpen={isFileUploadModalOpen}
         onClose={() => setIsFileUploadModalOpen(false)}
         type="assignment_scores"

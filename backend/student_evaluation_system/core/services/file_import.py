@@ -612,7 +612,7 @@ class FileImportService:
         """Find the student ID column from Turkish column names."""
         for col in columns:
             col_str = str(col).lower().strip()
-            if 'öğrenci no' in col_str or 'no' in col_str:
+            if 'öğrenci no' in col_str:
                 return col
         raise FileImportError("Student ID column not found. Expected columns containing 'öğrenci no'")
     
