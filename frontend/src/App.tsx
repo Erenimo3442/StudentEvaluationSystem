@@ -1,9 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import StudentLayout from './components/StudentLayout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import CourseDetail from './pages/CourseDetail'
 import StudentDashboard from './pages/StudentDashboard'
+import StudentCourseDetail from './pages/StudentCourseDetail'
 import InstructorDashboard from './pages/InstructorDashboard'
 import HeadDashboard from './pages/HeadDashboard'
 import StudentCourses from './pages/StudentCourses'
@@ -14,13 +16,16 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      
+      {/* Student routes with custom layout */}
+      <Route path="/student" element={<StudentLayout />}>
+        <Route index element={<StudentDashboard />} />
+        <Route path="courses" element={<StudentCourses />} />
+        <Route path="courses/:id" element={<StudentCourseDetail />} />
+      </Route>
+      
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
-        
-        {/* Student routes */}
-        <Route path="student" element={<StudentDashboard />} />
-        <Route path="student/courses" element={<StudentCourses />} />
-        <Route path="student/course/:id" element={<CourseDetail />} />
         
         {/* Instructor routes */}
         <Route path="instructor" element={<InstructorDashboard />} />

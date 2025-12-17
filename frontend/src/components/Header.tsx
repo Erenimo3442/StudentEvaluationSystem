@@ -19,6 +19,7 @@ export const Header = ({ setSidebarOpen }: HeaderProps) => {
                 <button
                     onClick={() => setSidebarOpen(true)}
                     className="lg:hidden p-2 rounded-full hover:bg-secondary-100 transition-colors"
+                    aria-label="Open menu"
                 >
                     <Bars3Icon className="h-6 w-6 text-secondary-600" />
                 </button>
@@ -28,7 +29,10 @@ export const Header = ({ setSidebarOpen }: HeaderProps) => {
                 <div className="flex items-center space-x-4">
                     {user ? (
                         <>
-                            <button className="p-2 rounded-full hover:bg-secondary-100 transition-colors relative group">
+                            <button 
+                                className="p-2 rounded-full hover:bg-secondary-100 transition-colors relative group"
+                                aria-label="Notifications"
+                            >
                                 <BellIcon className="h-6 w-6 text-secondary-600 group-hover:text-secondary-900 transition-colors" />
                                 <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-danger-500 border-2 border-white rounded-full"></span>
                             </button>
