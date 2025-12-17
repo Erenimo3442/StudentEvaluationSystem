@@ -152,7 +152,7 @@ class Command(BaseCommand):
 
     def create_term(self):
         term, _ = Term.objects.get_or_create(
-            name='Fall 2024',
+            name='Fall 2025',
             defaults={'is_active': True}
         )
         self.stdout.write(f'  ✓ Term: {term.name}')
@@ -164,7 +164,7 @@ class Command(BaseCommand):
             defaults={
                 'email': 'instructor@example.com',
                 'first_name': 'John',
-                'last_name': 'Instructor',
+                'last_name': 'Doe',
                 'role': 'instructor',
                 'department': department,
                 'university': university

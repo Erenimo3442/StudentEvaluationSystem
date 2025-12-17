@@ -97,11 +97,12 @@ class LearningOutcomeProgramOutcomeMappingSerializer(serializers.ModelSerializer
 
 class StudentLearningOutcomeScoreSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField()
+    student_id = serializers.IntegerField(source='student.id', read_only=True)
     learning_outcome = CoreLearningOutcomeSerializer(read_only=True)
     
     class Meta:
         model = StudentLearningOutcomeScore
-        fields = ['id', 'student', 'learning_outcome', 'score']
+        fields = ['id', 'student', 'student_id', 'learning_outcome', 'score']
 
 class StudentProgramOutcomeScoreSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField()
