@@ -28,15 +28,6 @@ function App() {
         <Route index element={<Dashboard />} />
       </Route>
 
-      {/* Student routes - consistent nested structure */}
-      <Route path="/student" element={<Layout showOnlyCoreItems={true} />}>
-        <Route index element={<StudentDashboard />} />
-        <Route path="courses" element={<StudentCourses />} />
-      </Route>
-      <Route path="/student/course/:id" element={<Layout showOnlyCoreItems={false} />}>
-        <Route index element={<CourseDetail />} />
-      </Route>
-
       {/* Instructor routes - consistent nested structure */}
       <Route path="/instructor" element={<Layout showOnlyCoreItems={true} />}>
         <Route index element={<InstructorDashboard />} />

@@ -102,9 +102,9 @@ export const coreService = {
 
 export const evaluationService = {
   getEnrollments: (studentId?: number) => api.get<Enrollment[]>('/api/evaluation/enrollments/', { params: { student: studentId } }),
-  getAssessments: (courseId?: number) => api.get('/evaluation/assessments/', { params: { course: courseId } }),
+  getAssessments: (courseId?: number) => api.get('/api/evaluation/assessments/', { params: { course: courseId } }),
   getStudentGrades: async (studentId?: number, courseId?: number) => {
-    const response = await api.get('/evaluation/grades/', { params: { student: studentId, course: courseId } })
+    const response = await api.get('/api/evaluation/grades/', { params: { student: studentId, course: courseId } })
     const data = response.data
     if (data && typeof data === 'object' && 'results' in data) {
       return { ...response, data: data.results }
