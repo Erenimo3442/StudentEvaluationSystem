@@ -55,17 +55,9 @@ const StudentCourses = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-secondary-900">My Courses</h1>
-          <p className="text-secondary-500 mt-1">Courses you are currently enrolled in</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="text-right">
-            <p className="text-sm text-secondary-600">Total Credits</p>
-            <p className="text-2xl font-bold text-primary-600">{totalCredits}</p>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-secondary-900">My Courses</h1>
+        <p className="text-secondary-500 mt-1">Courses you are currently enrolled in</p>
       </div>
 
       {/* Stats Cards */}
@@ -113,68 +105,65 @@ const StudentCourses = () => {
       {enrollments.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {enrollments.map((enrollment) => (
-            <Card key={enrollment.id} variant="hover" className="group cursor-pointer">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="h-12 w-12 rounded-xl bg-primary-600 flex items-center justify-center text-white font-bold shadow-lg">
-                    {enrollment.course.code?.slice(0, 2)}
+            <Link
+              key={enrollment.id}
+              to={`/student/courses/${enrollment.course.id}`}
+              className="block"
+            >
+              <Card variant="hover" className="group cursor-pointer h-full transition-all duration-200 hover:shadow-lg hover:border-primary-300">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-12 w-12 rounded-xl bg-primary-600 flex items-center justify-center text-white font-bold shadow-lg">
+                      {enrollment.course.code?.slice(0, 2)}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-secondary-900 group-hover:text-primary-600 transition-colors">
+                        {enrollment.course.code}
+                      </h3>
+                      <p className="text-xs text-secondary-500 flex items-center gap-1">
+                        <CalendarIcon className="h-3 w-3" />
+                        {enrollment.course.term?.name || 'Current Term'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-secondary-900 group-hover:text-primary-600 transition-colors">
-                      {enrollment.course.code}
-                    </h3>
-                    <p className="text-xs text-secondary-500 flex items-center gap-1">
-                      <CalendarIcon className="h-3 w-3" />
-                      {enrollment.course.term?.name || 'Current Term'}
-                    </p>
+                  <Badge variant="primary" className="text-xs">
+                    {enrollment.course.credits} CR
+                  </Badge>
+                </div>
+                
+                <h4 className="font-medium text-secondary-900 mb-3 line-clamp-2">
+                  {enrollment.course.name}
+                </h4>
+                
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center text-sm text-secondary-600">
+                    <UserIcon className="h-4 w-4 mr-2" />
+                    {enrollment.course.lecturer 
+                      ? `${enrollment.course.lecturer.first_name} ${enrollment.course.lecturer.last_name}`
+                      : 'Not assigned'
+                    }
+                  </div>
+                  <div className="flex items-center text-sm text-secondary-600">
+                    <ClockIcon className="h-4 w-4 mr-2" />
+                    {enrollment.course.credits} credits
                   </div>
                 </div>
-                <Badge variant="primary" className="text-xs">
-                  {enrollment.course.credits} CR
-                </Badge>
-              </div>
-              
-              <h4 className="font-medium text-secondary-900 mb-3 line-clamp-2">
-                {enrollment.course.name}
-              </h4>
-              
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center text-sm text-secondary-600">
-                  <UserIcon className="h-4 w-4 mr-2" />
-                  {enrollment.course.lecturer 
-                    ? `${enrollment.course.lecturer.first_name} ${enrollment.course.lecturer.last_name}`
-                    : 'Not assigned'
-                  }
+                
+                <div className="mt-4 pt-4 border-t border-secondary-100">
+                  {enrollment.grade ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-secondary-600">Final Grade</span>
+                      <Badge variant="success">{enrollment.grade}</Badge>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-secondary-600">Status</span>
+                      <Badge variant="info">In Progress</Badge>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center text-sm text-secondary-600">
-                  <ClockIcon className="h-4 w-4 mr-2" />
-                  {enrollment.course.credits} credits
-                </div>
-              </div>
-              
-              <div className="mt-4 pt-4 border-t border-secondary-100">
-                {enrollment.grade ? (
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-secondary-600">Final Grade</span>
-                    <Badge variant="success">{enrollment.grade}</Badge>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-secondary-600">Status</span>
-                    <Badge variant="info">In Progress</Badge>
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <Link
-                    to={`/student/course/${enrollment.course.id}`}
-                    className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    <ChartBarIcon className="h-4 w-4" />
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           ))}
         </div>
       ) : (

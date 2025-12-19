@@ -9,15 +9,13 @@ import {
     UsersIcon,
     Cog6ToothIcon,
     ArrowRightStartOnRectangleIcon,
-    XMarkIcon,
-    BuildingLibraryIcon,
-    BookOpenIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 
 interface SidebarProps {
     isOpen: boolean
     setIsOpen: (isOpen: boolean) => void
+    showOnlyCoreItems?: boolean
 }
 
 interface NavItem {
@@ -69,12 +67,12 @@ const getNavigationForRole = (role: string | null): NavItem[] => {
     return baseNavigation
 }
 
-export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
+export const Sidebar = ({ isOpen, setIsOpen, showOnlyCoreItems = false }: SidebarProps) => {
     const { user, logout } = useAuth()
     const location = useLocation()
     const navigate = useNavigate()
 
-    const navigation = getNavigationForRole(user?.role || null)
+    const navigation = showOnlyCoreItems ? [] : getNavigationForRole(user?.role || null)
 
     return (
         <>
@@ -97,12 +95,6 @@ export const Sidebar = ({ isOpen, setIsOpen }: SidebarProps) => {
                         <Link to="/" className="flex items-center space-x-3">
                             <span className="text-xl font-bold text-secondary-900 tracking-tight">SES</span>
                         </Link>
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            className="lg:hidden p-2 rounded-full hover:bg-secondary-100 transition-colors"
-                        >
-                            <XMarkIcon className="h-6 w-6 text-secondary-500" />
-                        </button>
                     </div>
 
                     {/* Navigation */}

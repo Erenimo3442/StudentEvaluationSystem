@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const Login = () => {
@@ -9,14 +9,23 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false)
   
   const { login, isAuthenticated, user } = useAuth()
-  const navigate = useNavigate()
 
   if (isAuthenticated && user) {
-    // Redirect to role-specific dashboard
-    const rolePath = user.role === 'instructor' ? 'instructor' : 
-                    user.role === 'admin' ? 'head' : 
-                    user.role === 'student' ? 'student' : '/'
-    return <Navigate to={`/${rolePath}`} replace />
+    let rolePath = '/'
+    switch (user.role) {
+      case 'instructor':
+        rolePath = '/instructor'
+        break
+      case 'admin':
+        rolePath = '/head'
+        break
+      case 'student':
+        rolePath = '/student'
+        break
+      default:
+        rolePath = '/'
+    }
+    return <Navigate to={rolePath} replace />
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

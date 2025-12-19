@@ -12,7 +12,7 @@ import {
   User
 } from '../types/index'
 
-const API_URL = 'http://localhost:8000/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: API_URL,
@@ -35,7 +35,7 @@ api.interceptors.request.use((config) => {
 export const authService = {
   login: async (credentials: LoginCredentials) => {
     console.warn('authService.login is deprecated. Use useAuth hook instead.')
-    const response = await api.post<AuthTokens>('/users/auth/login/', credentials)
+    const response = await api.post<AuthTokens>('/api/users/auth/login/', credentials)
     localStorage.setItem('access_token', response.data.access)
     localStorage.setItem('refresh_token', response.data.refresh)
     return response.data
@@ -48,17 +48,17 @@ export const authService = {
   },
   getCurrentUser: async () => {
     console.warn('authService.getCurrentUser is deprecated. Use useAuth hook instead.')
-    const response = await api.get<User>('/users/auth/me/')
+    const response = await api.get<User>('/api/users/auth/me/')
     return response.data
   }
 }
 
 export const coreService = {
-  getUniversities: () => api.get<University[]>('/core/universities/'),
-  getDepartments: (uniId?: number) => api.get<Department[]>('/core/departments/', { params: { university: uniId } }),
-  getPrograms: (deptId?: number) => api.get<Program[]>('/core/programs/', { params: { department: deptId } }),
+  getUniversities: () => api.get<University[]>('/api/core/universities/'),
+  getDepartments: (uniId?: number) => api.get<Department[]>('/api/core/departments/', { params: { university: uniId } }),
+  getPrograms: (deptId?: number) => api.get<Program[]>('/api/core/programs/', { params: { department: deptId } }),
   getCourses: async (progId?: number, userId?: number) => {
-    const response = await api.get('/core/courses/', { params: { program: progId, instructor: userId } })
+    const response = await api.get('/api/core/courses/', { params: { program: progId, instructor: userId } })
     // Handle paginated response
     const data = response.data
     if (data && typeof data === 'object' && 'results' in data) {
@@ -66,22 +66,51 @@ export const coreService = {
     }
     return response
   },
-  getCourse: (courseId: number) => api.get<Course>(`/core/courses/${courseId}/`),
-  getCourseLearningOutcomes: (courseId: number) => api.get(`/core/courses/${courseId}/learning_outcomes/`),
+  getCourse: (courseId: number) => api.get<Course>(`/api/core/courses/${courseId}/`),
+  getCourseLearningOutcomes: (courseId: number) => api.get(`/api/core/courses/${courseId}/learning_outcomes/`),
   getStudentLOScores: async (studentId?: number, courseId?: number) => {
-    const response = await api.get('/core/student-lo-scores/', { params: { student: studentId, course: courseId } })
-    // Handle paginated response
-    const data = response.data
-    if (data && typeof data === 'object' && 'results' in data) {
-      return { ...response, data: data.results }
+    const allResults: any[] = []
+    let nextUrl: string | null = '/api/core/student-lo-scores/'
+    
+    // Fetch all pages by following the 'next' pagination links
+    while (nextUrl) {
+      const response: any = await api.get(nextUrl, {
+        params: nextUrl === '/api/core/student-lo-scores/' ? { student: studentId, course: courseId } : undefined
+      })
+      
+      allResults.push(...response.data.results)
+      nextUrl = response.data.next
+      
+      // If next URL is absolute, convert to relative path
+      if (nextUrl && nextUrl.startsWith('http')) {
+        const url: URL = new URL(nextUrl)
+        nextUrl = url.pathname + url.search
+      }
     }
-    return response
+    
+    // Return in the same format as api.get() to maintain consistency
+    return {
+      data: allResults,
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any
+    }
   },
-  getStudentPOScores: (studentId?: number) => api.get<ProgramOutcomeScore[]>('/core/student-po-scores/', { params: { student: studentId } }),
+  getStudentPOScores: (studentId?: number) => api.get<ProgramOutcomeScore[]>('/api/core/student-po-scores/', { params: { student: studentId } }),
 }
 
 export const evaluationService = {
-  getEnrollments: (studentId?: number) => api.get<Enrollment[]>('/evaluation/enrollments/', { params: { student: studentId } }),
+  getEnrollments: (studentId?: number) => api.get<Enrollment[]>('/api/evaluation/enrollments/', { params: { student: studentId } }),
+  getAssessments: (courseId?: number) => api.get('/api/evaluation/assessments/', { params: { course: courseId } }),
+  getStudentGrades: async (studentId?: number, courseId?: number) => {
+    const response = await api.get('/api/evaluation/grades/', { params: { student: studentId, course: courseId } })
+    const data = response.data
+    if (data && typeof data === 'object' && 'results' in data) {
+      return { ...response, data: data.results }
+    }
+    return response
+  },
 }
 
 export const fileImportService = {
@@ -91,7 +120,7 @@ export const fileImportService = {
     formData.append('file', file)
 
     const response = await api.post(
-      `/core/file-import/assignment-scores/upload/?course_code=${encodeURIComponent(courseCode)}&term_id=${termId}`, 
+      `/api/core/file-import/assignment-scores/upload/?course_code=${encodeURIComponent(courseCode)}&term_id=${termId}`, 
       formData, 
       {
         headers: {
@@ -107,7 +136,7 @@ export const fileImportService = {
     formData.append('file', file)
 
     const response = await api.post(
-      `/core/file-import/assignment-scores/validate/?course_code=${encodeURIComponent(courseCode)}&term_id=${termId}`, 
+      `/api/core/file-import/assignment-scores/validate/?course_code=${encodeURIComponent(courseCode)}&term_id=${termId}`, 
       formData, 
       {
         headers: {
@@ -119,7 +148,7 @@ export const fileImportService = {
   },
 
   getAssignmentScoresUploadInfo: async () => {
-    const response = await api.get('/core/file-import/assignment-scores/upload/')
+    const response = await api.get('/api/core/file-import/assignment-scores/upload/')
     return response.data
   },
 
@@ -131,7 +160,7 @@ export const fileImportService = {
       formData.append('sheet_name', sheetName)
     }
 
-    const response = await api.post('/core/file-import/assessment-scores/upload/', formData, {
+    const response = await api.post('/api/core/file-import/assessment-scores/upload/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -143,7 +172,7 @@ export const fileImportService = {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await api.post('/core/file-import/assessment-scores/validate/', formData, {
+    const response = await api.post('/api/core/file-import/assessment-scores/validate/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -152,7 +181,7 @@ export const fileImportService = {
   },
 
   getAssessmentScoresUploadInfo: async () => {
-    const response = await api.get('/core/file-import/assessment-scores/upload/')
+    const response = await api.get('/api/core/file-import/assessment-scores/upload/')
     return response.data
   },
 
@@ -163,7 +192,7 @@ export const fileImportService = {
       formData.append('sheet_name', sheetName)
     }
 
-    const response = await api.post('/core/file-import/learning-outcomes/upload/', formData, {
+    const response = await api.post('/api/core/file-import/learning-outcomes/upload/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -175,7 +204,7 @@ export const fileImportService = {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await api.post('/core/file-import/learning-outcomes/validate/', formData, {
+    const response = await api.post('/api/core/file-import/learning-outcomes/validate/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -184,7 +213,7 @@ export const fileImportService = {
   },
 
   getLearningOutcomesUploadInfo: async () => {
-    const response = await api.get('/core/file-import/learning-outcomes/upload/')
+    const response = await api.get('/api/core/file-import/learning-outcomes/upload/')
     return response.data
   },
 
@@ -195,7 +224,7 @@ export const fileImportService = {
       formData.append('sheet_name', sheetName)
     }
 
-    const response = await api.post('/core/file-import/program-outcomes/upload/', formData, {
+    const response = await api.post('/api/core/file-import/program-outcomes/upload/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -207,7 +236,7 @@ export const fileImportService = {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await api.post('/core/file-import/program-outcomes/validate/', formData, {
+    const response = await api.post('/api/core/file-import/program-outcomes/validate/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -216,7 +245,7 @@ export const fileImportService = {
   },
 
   getProgramOutcomesUploadInfo: async () => {
-    const response = await api.get('/core/file-import/program-outcomes/upload/')
+    const response = await api.get('/api/core/file-import/program-outcomes/upload/')
     return response.data
   },
 }
