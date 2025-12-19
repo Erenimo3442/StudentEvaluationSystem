@@ -37,6 +37,7 @@ from evaluation.models import (
     Assessment, AssessmentLearningOutcomeMapping, 
     StudentGrade, CourseEnrollment
 )
+from evaluation.services import calculate_course_scores
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -236,72 +237,6 @@ class FileImportService:
                 raise
             raise FileImportError(f"Invalid file: {str(e)}")
     
-    def import_assessment_scores(self, course_code: str, term_id: int):
-        """
-        Import student grade data from file sheet/section.
-        
-        Args:
-            course_code (str): Code of the course for which grades are being imported
-            term_id (int): ID of the academic term for which grades are being imported
-            
-        Returns:
-            dict: Import results with created/updated counts
-        """
-        try:
-            df = self.parser.parse_sheet(self.file_obj)
-            course = self._get_course_by_code_and_term(course_code, term_id)
-            assessments = self._get_assessments_by_course(course)
-            
-            # Validate required columns
-            self._validate_required_columns(df, 'assessment_scores', assessments=assessments)
-            self._validate_students(df, course)
-            
-            created_count = 0
-            updated_count = 0
-            
-            with transaction.atomic():
-                for _, row in df.iterrows():
-                    try:
-                        # Get related objects
-                        student_user = self._get_student_by_id(str(row['student_id']).strip())
-                        assessment = self._get_assessment_by_name(str(row['assessment_name']).strip())
-                        
-                        # Clean data
-                        score = float(row['score'])
-                        
-                        # Validate score
-                        if score > assessment.total_score:
-                            raise ValidationError(f"Score {score} exceeds assessment total {assessment.total_score}")
-                        
-                        # Create or update grade
-                        grade, created = StudentGrade.objects.get_or_create(
-                            student=student_user,
-                            assessment=assessment,
-                            defaults={'score': score}
-                        )
-                        
-                        if not created:
-                            # Update existing grade
-                            grade.score = score
-                            grade.save()
-                            updated_count += 1
-                        else:
-                            created_count += 1
-                            
-                    except Exception as e:
-                        self.import_results['errors'].append(
-                            f"Error importing grade for {row.get('student_id', 'unknown')}: {str(e)}"
-                        )
-                        continue
-            
-            self.import_results['created']['grades'] = created_count
-            self.import_results['updated']['grades'] = updated_count
-            
-            return self.import_results
-            
-        except Exception as e:
-            raise FileImportError(f"Error importing grades: {str(e)}")
-    
     def import_assignment_scores(self, course_code: str, term_id: int):
         """
         Import assignment scores from Turkish Excel format.
@@ -353,6 +288,7 @@ class FileImportService:
             created_count = 0
             updated_count = 0
             skipped_count = 0
+            affected_courses = set()  # Track courses that need recalculation
             
             with transaction.atomic():
                 for idx, row in df.iterrows():
@@ -406,6 +342,9 @@ class FileImportService:
                                         defaults={'score': score_float}
                                     )
                                     
+                                    # Track this course for score recalculation
+                                    affected_courses.add(assessment.course_id)
+                                    
                                     if created:
                                         created_count += 1
                                     else:
@@ -427,6 +366,17 @@ class FileImportService:
             self.import_results['updated']['grades'] = updated_count
             self.import_results['skipped'] = skipped_count
             self.import_results['total_rows'] = len(df)
+            
+            # Recalculate scores for all affected courses
+            for course_id in affected_courses:
+                try:
+                    calculate_course_scores(course_id)
+                    logger.info(f"Recalculated scores for course {course_id} after import")
+                except Exception as e:
+                    logger.error(f"Failed to recalculate scores for course {course_id}: {e}")
+                    self.import_results['errors'].append(
+                        f"Score recalculation failed for course {course_id}: {str(e)}"
+                    )
             
             return self.import_results
             
@@ -555,14 +505,14 @@ class FileImportService:
     
     def _extract_assessment_columns(self, columns):
         """
-        Extract assessment columns from Turkish Excel format.
+        Extract assessment columns from Excel format.
         
         Column format examples:
-        - 'Midterm 1(%25)_0833AB' -> 'Midterm 1'
-        - 'Project(%40)_0833AB' -> 'Project'
-        - 'Attendance(%10)_0833AB' -> 'Attendance'
+        - 'Midterm 1(%25)_XXX' -> 'Midterm 1'
+        - 'Project(%40)_XXX' -> 'Project'
+        - 'Attendance(%10)_XXX' -> 'Attendance'
         
-        We only look at the first word/part before any suffix like _0833AB.
+        We only look at the first word/part before any suffix like _XXX.
         Non-assessment columns are: No, Öğrenci No, Adı, Soyadı, Snf, Girme Durum, Harf Notu
         """
         assessment_columns = []

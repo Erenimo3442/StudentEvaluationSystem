@@ -1,7 +1,8 @@
-from rest_framework import generics, viewsets
+from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Avg, Count
+from django.db import transaction
 
 from .models import (
     Assessment, AssessmentLearningOutcomeMapping,
@@ -13,7 +14,8 @@ from .serializers import (
     StudentGradeSerializer, StudentGradeCreateSerializer,
     CourseEnrollmentSerializer
 )
-from .services import calculate_course_scores
+from .services import calculate_course_scores, calculate_student_po_scores
+from core.models import StudentLearningOutcomeScore, StudentProgramOutcomeScore
 class AssessmentViewSet(viewsets.ModelViewSet):
     """CRUD operations for assessments."""
     queryset = Assessment.objects.select_related('course', 'created_by').all()
@@ -34,6 +36,21 @@ class AssessmentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(assessment_type=assessment_type)
         
         return queryset
+    
+    def perform_update(self, serializer):
+        """After updating an assessment, recalculate if weight changed."""
+        old_weight = self.get_object().weight
+        assessment = serializer.save()
+        
+        # Only recalculate if weight changed (expensive operation)
+        if old_weight != assessment.weight:
+            calculate_course_scores(assessment.course_id)
+    
+    def perform_destroy(self, instance):
+        """After deleting an assessment, recalculate scores."""
+        course_id = instance.course_id
+        instance.delete()
+        calculate_course_scores(course_id)
     
     @action(detail=True, methods=['get'])
     def grades(self, request, pk=None):
@@ -80,6 +97,26 @@ class AssessmentLearningOutcomeMappingViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(assessment_id=assessment_id)
         
         return queryset
+    
+    def perform_create(self, serializer):
+        """After creating LO mapping, recalculate scores."""
+        mapping = serializer.save()
+        calculate_course_scores(mapping.assessment.course_id)
+    
+    def perform_update(self, serializer):
+        """After updating LO mapping, recalculate scores."""
+        old_weight = self.get_object().weight
+        mapping = serializer.save()
+        
+        # Only recalculate if weight changed
+        if old_weight != mapping.weight:
+            calculate_course_scores(mapping.assessment.course_id)
+    
+    def perform_destroy(self, instance):
+        """After deleting LO mapping, recalculate scores."""
+        course_id = instance.assessment.course_id
+        instance.delete()
+        calculate_course_scores(course_id)
 
 
 class StudentGradeViewSet(viewsets.ModelViewSet):
@@ -117,6 +154,12 @@ class StudentGradeViewSet(viewsets.ModelViewSet):
         """After updating a grade, recalculate scores."""
         grade = serializer.save()
         calculate_course_scores(grade.assessment.course_id)
+    
+    def perform_destroy(self, instance):
+        """After deleting a grade, recalculate scores."""
+        course_id = instance.assessment.course_id
+        instance.delete()
+        calculate_course_scores(course_id)
 
 
 class CourseEnrollmentViewSet(viewsets.ModelViewSet):
@@ -136,6 +179,31 @@ class CourseEnrollmentViewSet(viewsets.ModelViewSet):
         
         return queryset
     
+    def perform_create(self, serializer):
+        """After enrolling a student, calculate their scores."""
+        enrollment = serializer.save()
+        calculate_course_scores(enrollment.course_id)
+    
+    def perform_destroy(self, instance):
+        """After unenrolling, remove student's scores for this course."""
+        course_id = instance.course_id
+        student_id = instance.student_id
+        program_id = instance.course.program_id
+        term_id = instance.course.term_id
+        
+        with transaction.atomic():
+            # Delete LO scores for this student in this course
+            StudentLearningOutcomeScore.objects.filter(
+                student_id=student_id,
+                learning_outcome__course_id=course_id
+            ).delete()
+            
+            # Delete the enrollment
+            instance.delete()
+            
+            # Recalculate PO scores (since removing course affects program-level scores)
+            calculate_student_po_scores(student_id, program_id, term_id)
+    
     @action(detail=False, methods=['post'])
     def bulk_enroll(self, request):
         """Enroll multiple students in a course."""
@@ -145,17 +213,25 @@ class CourseEnrollmentViewSet(viewsets.ModelViewSet):
         if not course_id or not student_ids:
             return Response(
                 {'detail': 'course_id and student_ids are required.'},
-                status=400
+                status=status.HTTP_400_BAD_REQUEST
             )
         
         enrollments = []
-        for student_id in student_ids:
-            enrollment, created = CourseEnrollment.objects.get_or_create(
-                student_id=student_id,
-                course_id=course_id
-            )
-            if created:
-                enrollments.append(enrollment)
+        newly_enrolled = False
+        
+        with transaction.atomic():
+            for student_id in student_ids:
+                enrollment, created = CourseEnrollment.objects.get_or_create(
+                    student_id=student_id,
+                    course_id=course_id
+                )
+                if created:
+                    enrollments.append(enrollment)
+                    newly_enrolled = True
+            
+            # Recalculate scores for all newly enrolled students
+            if newly_enrolled:
+                calculate_course_scores(course_id)
         
         serializer = self.get_serializer(enrollments, many=True)
         return Response({
@@ -181,4 +257,3 @@ class EvaluationCreateView(generics.CreateAPIView):
     """Create a student grade (evaluation)."""
     queryset = StudentGrade.objects.all()
     serializer_class = StudentGradeCreateSerializer
-
