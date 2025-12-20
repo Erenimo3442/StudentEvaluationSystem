@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from 'react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { coreService } from '../services/api'
 import FileUploadModal from '../components/FileUploadModal'
@@ -26,7 +26,10 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
   }
 
 
-  const { data, isLoading, error, refetch } = useQuery(['course', courseId], fetchCourseData)
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['course', courseId],
+    queryFn: fetchCourseData
+  })
 
   const handleUploadComplete = (result: any) => {
     setNotification({
