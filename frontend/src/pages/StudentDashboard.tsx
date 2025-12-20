@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
-import { ChartWidget } from '../components/ui/ChartWidget'
+import { LazyChartWidget as ChartWidget } from '../components/ui/LazyChartWidget'
 import { ChartBarIcon } from '@heroicons/react/24/outline'
 import { coreService, evaluationService } from '../services/api'
 import { Enrollment, ProgramOutcomeScore } from '../types/index'
@@ -23,9 +23,10 @@ const StudentDashboard = () => {
       if (!user) return
 
       try {
-        const [enrollmentsRes, poScoresRes] = await Promise.all([
+        const [enrollmentsRes, poScoresRes, courseAveragesData] = await Promise.all([
           evaluationService.getEnrollments(user.id),
           coreService.getStudentPOScores(user.id),
+          coreService.getLOBasedCourseAverages(user.id),
         ])
 
         // Handle paginated responses (data.results) or direct arrays
@@ -38,33 +39,12 @@ const StudentDashboard = () => {
         setEnrollments(enrollmentsList)
         setPoScores(Array.isArray(poScoresData) ? poScoresData : [])
 
-        // Fetch grades for each course to calculate weighted average
-        const scoresPromises = enrollmentsList.map(async (enrollment: Enrollment) => {
-          try {
-            const gradesRes = await evaluationService.getStudentGrades(user.id, enrollment.course.id)
-            const grades = Array.isArray(gradesRes.data) ? gradesRes.data : []
-            
-            if (grades.length === 0) {
-              return { courseId: enrollment.course.id, weightedAverage: null }
-            }
-
-            let totalWeight = 0
-            let weightedSum = 0
-            grades.forEach((grade: any) => {
-              const percentage = (grade.score / grade.assessment.total_score) * 100
-              weightedSum += percentage * grade.assessment.weight
-              totalWeight += grade.assessment.weight
-            })
-
-            const weightedAverage = totalWeight > 0 ? weightedSum / totalWeight : null
-            return { courseId: enrollment.course.id, weightedAverage }
-          } catch {
-            return { courseId: enrollment.course.id, weightedAverage: null }
-          }
-        })
-
-        const scores = await Promise.all(scoresPromises)
-        setCourseScores(scores)
+        // Use the pre-calculated course averages from backend (learning outcome scores)
+        const averages = Array.isArray(courseAveragesData) ? courseAveragesData : []
+        setCourseScores(averages.map((avg: any) => ({
+          courseId: avg.course_id,
+          weightedAverage: avg.weighted_average
+        })))
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
         setEnrollments([])

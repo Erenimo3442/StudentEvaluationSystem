@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Card } from '../components/ui/Card'
-import { ChartWidget } from '../components/ui/ChartWidget'
+import { LazyChartWidget as ChartWidget } from '../components/ui/LazyChartWidget'
 import {
   BuildingOfficeIcon,
   UserGroupIcon,
