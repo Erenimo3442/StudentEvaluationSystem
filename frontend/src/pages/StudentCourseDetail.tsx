@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
-import { ChartWidget } from '../components/ui/ChartWidget'
+import { LazyChartWidget as ChartWidget } from '../components/ui/LazyChartWidget'
 import {
   ChartBarIcon,
   ClipboardDocumentListIcon,
@@ -43,6 +43,7 @@ const StudentCourseDetail = () => {
   const [loScores, setLoScores] = useState<LearningOutcomeScore[]>([])
   const [learningOutcomes, setLearningOutcomes] = useState<LearningOutcome[]>([])
   const [studentGrades, setStudentGrades] = useState<StudentGrade[]>([])
+  const [weightedAverage, setWeightedAverage] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('assessments')
   const [loading, setLoading] = useState(true)
 
@@ -51,11 +52,12 @@ const StudentCourseDetail = () => {
       if (!id || !user) return
 
       try {
-        const [courseRes, loScoresRes, gradesRes, losRes] = await Promise.all([
+        const [courseRes, loScoresRes, gradesRes, losRes, courseAvgRes] = await Promise.all([
           coreService.getCourse(parseInt(id)),
           coreService.getStudentLOScores(user.id, parseInt(id)),
           evaluationService.getStudentGrades(user.id, parseInt(id)),
           coreService.getCourseLearningOutcomes(parseInt(id)),
+          evaluationService.getGradeBasedCourseAverages(user.id, parseInt(id)),
         ])
 
         setCourse(courseRes.data)
@@ -65,6 +67,11 @@ const StudentCourseDetail = () => {
         setStudentGrades(gradesData)
         const losData = Array.isArray(losRes.data) ? losRes.data : []
         setLearningOutcomes(losData)
+        
+        // Get the weighted average from backend
+        if (courseAvgRes && courseAvgRes.length > 0) {
+          setWeightedAverage(courseAvgRes[0].weighted_average)
+        }
       } catch (error) {
         console.error('Error fetching course data:', error)
       } finally {
@@ -74,21 +81,6 @@ const StudentCourseDetail = () => {
 
     fetchData()
   }, [id, user])
-
-  // Calculate weighted average from assessments
-  const calculateWeightedAverage = () => {
-    if (studentGrades.length === 0) return null
-    let totalWeight = 0
-    let weightedSum = 0
-    studentGrades.forEach((grade) => {
-      const percentage = (grade.score / grade.assessment.total_score) * 100
-      weightedSum += percentage * grade.assessment.weight
-      totalWeight += grade.assessment.weight
-    })
-    return totalWeight > 0 ? weightedSum / totalWeight : null
-  }
-
-  const weightedAverage = calculateWeightedAverage()
 
   // Check if scores are already in percentage (0-100) or decimal (0-1) format
   const scoreMultiplier =

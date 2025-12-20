@@ -9,7 +9,7 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery
-} from 'react-query';
+} from '@tanstack/react-query';
 import type {
   MutationFunction,
   QueryFunction,
@@ -20,7 +20,7 @@ import type {
   UseMutationResult,
   UseQueryOptions,
   UseQueryResult
-} from 'react-query';
+} from '@tanstack/react-query';
 
 import type {
   CoreFileImportUploadCreate400,

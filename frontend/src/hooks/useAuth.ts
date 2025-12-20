@@ -1,6 +1,6 @@
 import React, { useContext, createContext, useEffect, useState, ReactNode } from 'react'
 import { useUsersAuthLoginCreate, useUsersAuthMeRetrieve } from '../api/generated/authentication/authentication'
-import { useQueryClient } from 'react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { CustomUser } from '../api/model/customUser'
 import { TokenResponse } from '../api/model/tokenResponse'
 
@@ -35,11 +35,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const { data: currentUser, isLoading: userLoading, error: userError } = useUsersAuthMeRetrieve({
     query: {
       enabled: !!localStorage.getItem('access_token'),
-      retry: false,
-      onError: () => {
-        // Token is invalid, clear it
-        logout()
-      }
+      retry: false
     }
   })
 
@@ -47,10 +43,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (currentUser) {
       setUser(currentUser)
     }
+    if (userError) {
+      // Token is invalid, clear it
+      logout()
+    }
     if (!userLoading) {
       setIsLoading(false)
     }
-  }, [currentUser, userLoading])
+  }, [currentUser, userLoading, userError])
 
   // Create a custom login mutation that accepts password
   const loginMutation = useUsersAuthLoginCreate({
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.setItem('refresh_token', data.refresh)
         
         // Invalidate and refetch user data
-        queryClient.invalidateQueries(['/api/users/auth/me/'])
+        queryClient.invalidateQueries({ queryKey: ['/api/users/auth/me/'] })
       },
       onError: (error) => {
         // Let the calling component handle the error
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     login,
     logout,
-    isLoading: isLoading || loginMutation.isLoading,
+    isLoading: isLoading || loginMutation.isPending,
     isAuthenticated: !!user,
   }
 
