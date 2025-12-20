@@ -2,18 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { Card } from '../components/ui/Card'
 import FileUploadModal from '../components/FileUploadModal'
-import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip
-} from 'recharts'
+import { ChartWidget } from '../components/ui/ChartWidget'
 import { ChevronLeft, ChevronRight, Upload } from 'lucide-react'
 import { coreService, evaluationService } from '../services/api'
 import { Course, LearningOutcomeScore } from '../types/index'
@@ -273,48 +262,68 @@ const InstructorDashboard = () => {
               {/* Chart Display */}
               <div className="h-80">
                 {activeChart === 'radar' ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={course.loScores}>
-                      <PolarGrid stroke="#e5e7eb" />
-                      <PolarAngleAxis dataKey="lo" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 10 }} />
-                      <Radar
-                        name="Score"
-                        dataKey="score"
-                        stroke="#6366f1"
-                        fill="#6366f1"
-                        fillOpacity={0.4}
-                      />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                        labelStyle={{ color: '#374151' }}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
+                  <ChartWidget
+                    key="radar-chart"
+                    title=""
+                    type="radar"
+                    series={[{
+                      name: 'Score',
+                      data: (course.loScores || []).map(lo => lo.score)
+                    }]}
+                    options={{
+                      xaxis: {
+                        categories: (course.loScores || []).map(lo => lo.lo)
+                      },
+                      yaxis: {
+                        show : false,
+                        min: 0,
+                        max: 100
+                      },
+                      fill: {
+                        opacity: 0.4
+                      },
+                      colors: ['#6366f1'],
+                      markers: {
+                        size: 4
+                      },
+                      dataLabels: {
+                        enabled: true,
+                        background: {
+                          enabled: true,
+                          borderRadius:2,
+                        }
+                      }
+                    }}
+                    height={320}
+                    className="shadow-none border-0 p-0"
+                  />
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={course.gradeDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={3}
-                        dataKey="count"
-                        label={(entry: any) => `${entry.grade}: ${((entry.percent || 0) * 100).toFixed(0)}%`}
-                        labelLine={{ stroke: '#9ca3af' }}
-                      >
-                        {course.gradeDistribution?.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                        formatter={(value: any, _name: any, props: any) => [`${value} students`, props.payload?.grade || '']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <ChartWidget
+                    key="donut-chart"
+                    title=""
+                    type="donut"
+                    series={(course.gradeDistribution || []).map(item => item.count)}
+                    options={{
+                      labels: (course.gradeDistribution || []).map(item => item.grade),
+                      colors: (course.gradeDistribution || []).map(item => item.color),
+                      legend: {
+                        position: 'bottom'
+                      },
+                      dataLabels: {
+                        enabled: true,
+                        formatter: (val: number) => `${val.toFixed(0)}%`
+                      },
+                      plotOptions: {
+                        pie: {
+                          donut: {
+                            size: '60%'
+                          }
+                        }
+                      }
+                    }}
+                    height={320}
+                    className="shadow-none border-0 p-0"
+                  />
                 )}
               </div>
             </div>
