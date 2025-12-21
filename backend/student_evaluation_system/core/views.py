@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema_view, extend_schema
+from django.db.models import Avg, F
 from .services.file_import import FileImportService
 from .services.file_import import FileImportError
 from .services.validation import AssignmentScoreValidator
@@ -200,6 +201,133 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(learning_outcome__course_id=course_id)
         
         return queryset
+    
+    @action(detail=False, methods=['get'])
+    def course_averages(self, request):
+        """
+        Calculate average learning outcome scores per course.
+        
+        Query Parameters:
+        - student: Student ID (optional) - filter by specific student
+        - course: Course ID (optional) - filter by specific course
+        
+        At least one parameter must be provided.
+        
+        Returns:
+        - List of courses with calculated average LO score
+        
+        Examples:
+        - /api/core/student-lo-scores/course_averages/?student=1 (all courses for student)
+        - /api/core/student-lo-scores/course_averages/?course=5 (all students in course)
+        - /api/core/student-lo-scores/course_averages/?student=1&course=5 (specific student in course)
+        """
+        student_id = request.query_params.get('student')
+        course_id = request.query_params.get('course')
+        
+        if not student_id and not course_id:
+            return Response(
+                {'error': 'Either student or course query parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        from evaluation.models import CourseEnrollment
+        
+        # Build query based on provided parameters
+        if student_id and course_id:
+            # Specific student in specific course
+            course_ids = [int(course_id)]
+        elif student_id:
+            # All courses for a specific student
+            enrollments = CourseEnrollment.objects.filter(
+                student_id=student_id
+            ).values_list('course_id', flat=True)
+            course_ids = list(enrollments)
+        else:
+            # All students in a specific course
+            course_ids = [int(course_id)]
+        
+        # Calculate average LO score for each course
+        course_averages = []
+        
+        for cid in course_ids:
+            # Build base query
+            lo_scores_query = StudentLearningOutcomeScore.objects.filter(
+                learning_outcome__course_id=cid
+            )
+            
+            # Filter by student if provided
+            if student_id:
+                lo_scores_query = lo_scores_query.filter(student_id=student_id)
+            
+            if lo_scores_query.exists():
+                # Calculate average score (scores are already in 0-100 or 0-1 format)
+                avg_result = lo_scores_query.aggregate(avg_score=Avg('score'))
+                avg_score = avg_result['avg_score']
+                
+                # Check if scores are in decimal format (0-1) and convert to percentage
+                # Assuming scores > 1 are already percentages
+                if avg_score is not None and avg_score <= 1:
+                    avg_score = avg_score * 100
+            else:
+                avg_score = None
+            
+            course_averages.append({
+                'course_id': cid,
+                'weighted_average': round(avg_score, 2) if avg_score is not None else None
+            })
+        
+        return Response(course_averages)
+    
+    @action(detail=False, methods=['get'])
+    def lo_averages(self, request):
+        """
+        Calculate average scores grouped by learning outcome for a course.
+        Used for instructor analytics (radar charts).
+        
+        Query Parameters:
+        - course: Course ID (required)
+        
+        Returns:
+        - List of learning outcomes with their average scores across all students
+        
+        Example: /api/core/student-lo-scores/lo_averages/?course=5
+        Response: [
+            {"lo_code": "LO1", "lo_description": "...", "avg_score": 85.5},
+            {"lo_code": "LO2", "lo_description": "...", "avg_score": 78.2}
+        ]
+        """
+        course_id = request.query_params.get('course')
+        
+        if not course_id:
+            return Response(
+                {'error': 'course query parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get all LO scores for this course grouped by learning outcome
+        lo_averages = (
+            StudentLearningOutcomeScore.objects
+            .filter(learning_outcome__course_id=course_id)
+            .values('learning_outcome__code', 'learning_outcome__description')
+            .annotate(avg_score=Avg('score'))
+            .order_by('learning_outcome__code')
+        )
+        
+        # Format and convert scores if needed
+        result = []
+        for item in lo_averages:
+            avg_score = item['avg_score']
+            # Convert to percentage if in decimal format
+            if avg_score is not None and avg_score <= 1:
+                avg_score = avg_score * 100
+            
+            result.append({
+                'lo_code': item['learning_outcome__code'],
+                'lo_description': item['learning_outcome__description'],
+                'avg_score': round(avg_score, 2) if avg_score is not None else 0
+            })
+        
+        return Response(result)
 
 
 class StudentProgramOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):

@@ -1,7 +1,7 @@
 from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, F, Sum, FloatField
 from django.db import transaction
 
 from .models import (
@@ -160,6 +160,85 @@ class StudentGradeViewSet(viewsets.ModelViewSet):
         course_id = instance.assessment.course_id
         instance.delete()
         calculate_course_scores(course_id)
+    
+    @action(detail=False, methods=['get'])
+    def course_averages(self, request):
+        """
+        Calculate weighted course averages based on assessment grades and weights.
+        This is used for lecturer analytics and charts.
+        
+        Query Parameters:
+        - student: Student ID (optional) - for specific student
+        - course: Course ID (optional) - for specific course
+        
+        Returns:
+        - List of courses with calculated weighted average percentage based on grades
+        
+        Example: /api/evaluation/grades/course_averages/?student=1
+        Example: /api/evaluation/grades/course_averages/?course=5
+        """
+        student_id = request.query_params.get('student')
+        course_id = request.query_params.get('course')
+        
+        if not student_id and not course_id:
+            return Response(
+                {'error': 'Either student or course query parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get all enrollments based on filters
+        enrollments_query = CourseEnrollment.objects.all()
+        
+        if student_id:
+            enrollments_query = enrollments_query.filter(student_id=student_id)
+        if course_id:
+            enrollments_query = enrollments_query.filter(course_id=course_id)
+        
+        course_ids = enrollments_query.values_list('course_id', flat=True).distinct()
+        
+        # Calculate weighted average for each course
+        course_averages = []
+        
+        for cid in course_ids:
+            # Base query for grades in this course
+            grades_query = StudentGrade.objects.filter(assessment__course_id=cid)
+            
+            # Filter by student if provided
+            if student_id:
+                grades_query = grades_query.filter(student_id=student_id)
+            
+            # Get all grades with assessment details and calculate percentage
+            grades = grades_query.select_related('assessment').annotate(
+                # Calculate percentage for each grade
+                percentage=F('score') * 100.0 / F('assessment__total_score'),
+                # Get the weight from assessment
+                weight=F('assessment__weight')
+            )
+            
+            if grades.exists():
+                # Calculate weighted sum and total weight using aggregation
+                aggregated = grades.aggregate(
+                    weighted_sum=Sum(F('percentage') * F('weight'), output_field=FloatField()),
+                    total_weight=Sum('weight')
+                )
+                
+                weighted_sum = aggregated['weighted_sum'] or 0
+                total_weight = aggregated['total_weight'] or 0
+                
+                # Calculate final weighted average
+                if total_weight > 0:
+                    weighted_average = weighted_sum / total_weight
+                else:
+                    weighted_average = None
+            else:
+                weighted_average = None
+            
+            course_averages.append({
+                'course_id': cid,
+                'weighted_average': round(weighted_average, 2) if weighted_average is not None else None
+            })
+        
+        return Response(course_averages)
 
 
 class CourseEnrollmentViewSet(viewsets.ModelViewSet):

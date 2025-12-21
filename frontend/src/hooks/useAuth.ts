@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (currentUser) {
       setUser(currentUser)
     }
-    if (userError) {
+    if (userError instanceof Error) {
       // Token is invalid, clear it
       logout()
     }

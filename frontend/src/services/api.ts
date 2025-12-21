@@ -5,8 +5,8 @@ import {
   Program,
   Course,
   Enrollment,
-  LearningOutcomeScore,
   ProgramOutcomeScore,
+  CourseAverage,
   LoginCredentials,
   AuthTokens,
   User
@@ -98,6 +98,14 @@ export const coreService = {
     }
   },
   getStudentPOScores: (studentId?: number) => api.get<ProgramOutcomeScore[]>('/api/core/student-po-scores/', { params: { student: studentId } }),
+  getLOBasedCourseAverages: async (studentId?: number, courseId?: number): Promise<CourseAverage[]> => {
+    const response = await api.get<CourseAverage[]>('/api/core/student-lo-scores/course_averages/', { params: { student: studentId, course: courseId } })
+    return response.data
+  },
+  getLOAveragesByCourse: async (courseId: number) => {
+    const response = await api.get('/api/core/student-lo-scores/lo_averages/', { params: { course: courseId } })
+    return response.data
+  },
 }
 
 export const evaluationService = {
@@ -110,6 +118,12 @@ export const evaluationService = {
       return { ...response, data: data.results }
     }
     return response
+  },
+  getGradeBasedCourseAverages: async (studentId?: number, courseId?: number): Promise<CourseAverage[]> => {
+    const response = await api.get<CourseAverage[]>('/api/evaluation/grades/course_averages/', { 
+      params: { student: studentId, course: courseId } 
+    })
+    return response.data
   },
 }
 

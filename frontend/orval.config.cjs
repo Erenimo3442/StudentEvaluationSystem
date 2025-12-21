@@ -18,6 +18,7 @@ module.exports = {
           useQuery: true,
           useInfinite: true,
           useInfiniteQueryParam: 'page',
+          version: 5,
         },
       },
     },

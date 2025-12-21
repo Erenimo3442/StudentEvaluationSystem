@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { Card } from '../components/ui/Card'
 import FileUploadModal from '../components/FileUploadModal'
@@ -41,7 +41,7 @@ const InstructorDashboard = () => {
     enabled: !!user?.id
   })
 
-  const courses = coursesData || []
+  const courses = useMemo(() => Array.isArray(coursesData) ? coursesData : [], [coursesData])
 
   // Fetch analytics for all courses in parallel
   const analyticsQueries = useQueries({
@@ -123,8 +123,16 @@ const InstructorDashboard = () => {
   }
 
   // Combine course data with analytics
-  const coursesWithAnalytics: CourseWithAnalytics[] = courses.map((course: Course, index: number) => {
-    const analytics = analyticsQueries[index]?.data as CourseAnalytics | undefined
+  // Create a Map for O(1) lookup of analytics by course ID
+  const analyticsMap = new Map<number, CourseAnalytics>()
+  analyticsQueries.forEach((query, index) => {
+    if (query.data && courses[index]) {
+      analyticsMap.set(courses[index].id, query.data as CourseAnalytics)
+    }
+  })
+
+  const coursesWithAnalytics: CourseWithAnalytics[] = courses.map((course: Course) => {
+    const analytics = analyticsMap.get(course.id)
     
     if (!analytics) {
       return {
