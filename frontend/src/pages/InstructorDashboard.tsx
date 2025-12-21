@@ -4,9 +4,13 @@ import { Card } from '../components/ui/Card'
 import FileUploadModal from '../components/FileUploadModal'
 import { ChartWidget } from '../components/ui/ChartWidget'
 import { ChevronLeft, ChevronRight, Upload } from 'lucide-react'
-import { coreService, evaluationService } from '../services/api'
-import { Course, LearningOutcomeScore } from '../types/index'
 import { useAuth } from '../hooks/useAuth'
+import { 
+  coreStudentLoScoresLoAveragesRetrieve,
+  coreCoursesList 
+} from '../api/generated/core/core'
+import { evaluationGradesCourseAveragesRetrieve } from '../api/generated/evaluation/evaluation'
+import type { Course } from '../api/model/course'
 
 interface CourseWithAnalytics extends Course {
   students?: number
@@ -31,27 +35,29 @@ const InstructorDashboard = () => {
   const [uploadResult, setUploadResult] = useState<any>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
-  // Fetch courses for the instructor
+  // Fetch courses for the instructor using orval
   const { data: coursesData, isLoading: coursesLoading } = useQuery({
     queryKey: ['instructor-courses', user?.id],
     queryFn: async () => {
-      const response = await coreService.getCourses(undefined, user?.id)
-      return response.data
+      // Pass instructor filter via params in options (second parameter)
+      const response = await coreCoursesList(undefined, { params: { instructor: user?.id } })
+      return response.results || []
     },
     enabled: !!user?.id
   })
 
   const courses = useMemo(() => Array.isArray(coursesData) ? coursesData : [], [coursesData])
 
-  // Fetch analytics for all courses in parallel
+  // Fetch analytics for all courses in parallel using orval raw functions
   const analyticsQueries = useQueries({
     queries: courses.map((course: Course) => ({
       queryKey: ['course-analytics', course.id],
       queryFn: async () => {
         try {
+          // Use orval's raw functions (not hooks) inside queryFn
           const [loAveragesRes, gradeAveragesRes] = await Promise.all([
-            coreService.getLOAveragesByCourse(course.id),
-            evaluationService.getGradeBasedCourseAverages(undefined, course.id)
+            coreStudentLoScoresLoAveragesRetrieve({ params: { course: course.id } }),
+            evaluationGradesCourseAveragesRetrieve({ params: { course: course.id, per_student: true } })
           ])
           
           const loAverages = Array.isArray(loAveragesRes) ? loAveragesRes : []
@@ -176,7 +182,6 @@ const InstructorDashboard = () => {
   })
 
   const loading = coursesLoading || analyticsQueries.some(q => q.isLoading)
-  const isLoadingAnalytics = analyticsQueries.some(q => q.isLoading)
 
   const nextCourse = () => setCurrentIndex((prev) => (prev + 1) % coursesWithAnalytics.length)
   const prevCourse = () => setCurrentIndex((prev) => (prev - 1 + coursesWithAnalytics.length) % coursesWithAnalytics.length)

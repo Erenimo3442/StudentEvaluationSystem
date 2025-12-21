@@ -170,21 +170,30 @@ class StudentGradeViewSet(viewsets.ModelViewSet):
         Query Parameters:
         - student: Student ID (optional) - for specific student
         - course: Course ID (optional) - for specific course
+        - per_student: Boolean (optional) - if true with course, returns per-student averages
         
         Returns:
-        - List of courses with calculated weighted average percentage based on grades
+        - If student specified: List of courses with weighted average for that student
+        - If course specified without student: Aggregated average for the course
+        - If course + per_student=true: List of all students with their weighted averages (for distribution)
         
         Example: /api/evaluation/grades/course_averages/?student=1
         Example: /api/evaluation/grades/course_averages/?course=5
+        Example: /api/evaluation/grades/course_averages/?course=5&per_student=true (for grade distribution)
         """
         student_id = request.query_params.get('student')
         course_id = request.query_params.get('course')
+        per_student = request.query_params.get('per_student', 'false').lower() == 'true'
         
         if not student_id and not course_id:
             return Response(
                 {'error': 'Either student or course query parameter is required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # Special case: per-student averages for grade distribution
+        if course_id and per_student and not student_id:
+            return self._calculate_per_student_averages(course_id)
         
         # Get all enrollments based on filters
         enrollments_query = CourseEnrollment.objects.all()
@@ -239,6 +248,54 @@ class StudentGradeViewSet(viewsets.ModelViewSet):
             })
         
         return Response(course_averages)
+    
+    def _calculate_per_student_averages(self, course_id):
+        """
+        Calculate weighted average for each student in a course.
+        Used for grade distribution analytics.
+        
+        Returns: List of students with their weighted averages
+        """
+        # Get all students enrolled in this course
+        enrollments = CourseEnrollment.objects.filter(course_id=course_id).select_related('student')
+        
+        student_averages = []
+        
+        for enrollment in enrollments:
+            student_id = enrollment.student_id
+            
+            # Get all grades for this student in this course
+            grades = StudentGrade.objects.filter(
+                student_id=student_id,
+                assessment__course_id=course_id
+            ).select_related('assessment').annotate(
+                percentage=F('score') * 100.0 / F('assessment__total_score'),
+                weight=F('assessment__weight')
+            )
+            
+            if grades.exists():
+                # Calculate weighted average for this student
+                aggregated = grades.aggregate(
+                    weighted_sum=Sum(F('percentage') * F('weight'), output_field=FloatField()),
+                    total_weight=Sum('weight')
+                )
+                
+                weighted_sum = aggregated['weighted_sum'] or 0
+                total_weight = aggregated['total_weight'] or 0
+                
+                if total_weight > 0:
+                    weighted_average = weighted_sum / total_weight
+                else:
+                    weighted_average = None
+            else:
+                weighted_average = None
+            
+            student_averages.append({
+                'student_id': student_id,
+                'weighted_average': round(weighted_average, 2) if weighted_average is not None else None
+            })
+        
+        return Response(student_averages)
 
 
 class CourseEnrollmentViewSet(viewsets.ModelViewSet):
