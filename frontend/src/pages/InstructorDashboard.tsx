@@ -276,7 +276,7 @@ const InstructorDashboard = () => {
               <div className="h-80">
                 {activeChart === 'radar' ? (
                   <ChartWidget
-                    key="radar-chart"
+                    key={`radar-chart-${course.id}`}
                     title=""
                     type="radar"
                     series={[{
@@ -312,7 +312,7 @@ const InstructorDashboard = () => {
                   />
                 ) : (
                   <ChartWidget
-                    key="donut-chart"
+                    key={`donut-chart-${course.id}`}
                     title=""
                     type="donut"
                     series={(course.gradeDistribution || []).map(item => item.count)}
