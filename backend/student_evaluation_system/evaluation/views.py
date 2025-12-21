@@ -1,6 +1,8 @@
 from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from django.db.models import Avg, Count, F, Sum, FloatField
 from django.db import transaction
 
@@ -16,6 +18,25 @@ from .serializers import (
 )
 from .services import calculate_course_scores, calculate_student_po_scores
 from core.models import StudentLearningOutcomeScore, StudentProgramOutcomeScore
+
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter assessments by course ID'
+            ),
+            OpenApiParameter(
+                name='type',
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description='Filter assessments by type (midterm, final, homework, project, quiz, attendance, other)'
+            ),
+        ]
+    )
+)
 class AssessmentViewSet(viewsets.ModelViewSet):
     """CRUD operations for assessments."""
     queryset = Assessment.objects.select_related('course', 'created_by').all()
@@ -82,6 +103,18 @@ class AssessmentViewSet(viewsets.ModelViewSet):
         })
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='assessment',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter mappings by assessment ID'
+            ),
+        ]
+    )
+)
 class AssessmentLearningOutcomeMappingViewSet(viewsets.ModelViewSet):
     """CRUD operations for assessment-LO mappings."""
     queryset = AssessmentLearningOutcomeMapping.objects.select_related(
@@ -119,6 +152,53 @@ class AssessmentLearningOutcomeMappingViewSet(viewsets.ModelViewSet):
         calculate_course_scores(course_id)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='student',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter grades by student ID'
+            ),
+            OpenApiParameter(
+                name='assessment',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter grades by assessment ID'
+            ),
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter grades by course ID'
+            ),
+        ]
+    ),
+    course_averages=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='student',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Get weighted averages for specific student across all their courses'
+            ),
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Get weighted average for specific course (class average or per-student)'
+            ),
+            OpenApiParameter(
+                name='per_student',
+                type=OpenApiTypes.BOOL,
+                location=OpenApiParameter.QUERY,
+                description='When used with course parameter, returns individual student averages for grade distribution'
+            ),
+        ],
+        description='Calculate weighted course averages. Either student or course parameter is required.'
+    )
+)
 class StudentGradeViewSet(viewsets.ModelViewSet):
     """CRUD operations for student grades."""
     queryset = StudentGrade.objects.select_related(
@@ -195,15 +275,18 @@ class StudentGradeViewSet(viewsets.ModelViewSet):
         if course_id and per_student and not student_id:
             return self._calculate_per_student_averages(course_id)
         
-        # Get all enrollments based on filters
-        enrollments_query = CourseEnrollment.objects.all()
-        
-        if student_id:
-            enrollments_query = enrollments_query.filter(student_id=student_id)
-        if course_id:
-            enrollments_query = enrollments_query.filter(course_id=course_id)
-        
-        course_ids = enrollments_query.values_list('course_id', flat=True).distinct()
+        # Determine which courses to calculate averages for
+        if course_id and not student_id:
+            # Direct course query - return class average for this course
+            course_ids = [int(course_id)]
+        elif student_id:
+            # Get all courses this student is enrolled in
+            enrollments_query = CourseEnrollment.objects.filter(student_id=student_id)
+            if course_id:
+                enrollments_query = enrollments_query.filter(course_id=course_id)
+            course_ids = list(enrollments_query.values_list('course_id', flat=True).distinct())
+        else:
+            course_ids = []
         
         # Calculate weighted average for each course
         course_averages = []
@@ -298,6 +381,24 @@ class StudentGradeViewSet(viewsets.ModelViewSet):
         return Response(student_averages)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='student',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter enrollments by student ID'
+            ),
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter enrollments by course ID'
+            ),
+        ]
+    )
+)
 class CourseEnrollmentViewSet(viewsets.ModelViewSet):
     """CRUD operations for course enrollments."""
     queryset = CourseEnrollment.objects.select_related('student', 'course').all()

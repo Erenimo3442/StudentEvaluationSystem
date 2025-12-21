@@ -8,7 +8,19 @@
 
 export type EvaluationGradesListParams = {
 /**
+ * Filter grades by assessment ID
+ */
+assessment?: number;
+/**
+ * Filter grades by course ID
+ */
+course?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;
+/**
+ * Filter grades by student ID
+ */
+student?: number;
 };

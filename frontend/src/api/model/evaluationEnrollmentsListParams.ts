@@ -8,7 +8,15 @@
 
 export type EvaluationEnrollmentsListParams = {
 /**
+ * Filter enrollments by course ID
+ */
+course?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;
+/**
+ * Filter enrollments by student ID
+ */
+student?: number;
 };

@@ -6,9 +6,12 @@ import { ChartWidget } from '../components/ui/ChartWidget'
 import { ChevronLeft, ChevronRight, Upload } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { 
-  coreStudentLoScoresLoAveragesRetrieve,
   coreCoursesList 
 } from '../api/generated/core/core'
+
+import {
+  coreStudentLoScoresLoAveragesRetrieve
+} from '../api/generated/analytics/analytics'
 import { evaluationGradesCourseAveragesRetrieve } from '../api/generated/evaluation/evaluation'
 import type { Course } from '../api/model/course'
 
@@ -56,8 +59,8 @@ const InstructorDashboard = () => {
         try {
           // Use orval's raw functions (not hooks) inside queryFn
           const [loAveragesRes, gradeAveragesRes] = await Promise.all([
-            coreStudentLoScoresLoAveragesRetrieve({ params: { course: course.id } }),
-            evaluationGradesCourseAveragesRetrieve({ params: { course: course.id, per_student: true } })
+            coreStudentLoScoresLoAveragesRetrieve({ course: course.id }),
+            evaluationGradesCourseAveragesRetrieve({ course: course.id, per_student: true })
           ])
           
           const loAverages = Array.isArray(loAveragesRes) ? loAveragesRes : []

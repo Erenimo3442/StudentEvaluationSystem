@@ -38,6 +38,7 @@ import type {
   EvaluationAssessmentsListParams,
   EvaluationEnrollmentsListParams,
   EvaluationEvaluationListParams,
+  EvaluationGradesCourseAveragesRetrieveParams,
   EvaluationGradesListParams,
   PaginatedAssessmentLearningOutcomeMappingList,
   PaginatedAssessmentList,
@@ -3061,27 +3062,17 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(mutationOptions, queryClient);
     }
     /**
- * Calculate weighted course averages based on assessment grades and weights.
-This is used for lecturer analytics and charts.
-
-Query Parameters:
-- student: Student ID (optional) - for specific student
-- course: Course ID (optional) - for specific course
-
-Returns:
-- List of courses with calculated weighted average percentage based on grades
-
-Example: /api/evaluation/grades/course_averages/?student=1
-Example: /api/evaluation/grades/course_averages/?course=5
+ * Calculate weighted course averages. Either student or course parameter is required.
  */
 export const evaluationGradesCourseAveragesRetrieve = (
-    
+    params?: EvaluationGradesCourseAveragesRetrieveParams,
  options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
       
       
       return customInstance<StudentGrade>(
-      {url: `/api/evaluation/grades/course_averages/`, method: 'GET', signal
+      {url: `/api/evaluation/grades/course_averages/`, method: 'GET',
+        params, signal
     },
       options);
     }
@@ -3089,72 +3080,72 @@ export const evaluationGradesCourseAveragesRetrieve = (
 
 
 
-export const getEvaluationGradesCourseAveragesRetrieveInfiniteQueryKey = () => {
+export const getEvaluationGradesCourseAveragesRetrieveInfiniteQueryKey = (params?: EvaluationGradesCourseAveragesRetrieveParams,) => {
     return [
-    'infinate', `/api/evaluation/grades/course_averages/`
+    'infinate', `/api/evaluation/grades/course_averages/`, ...(params ? [params]: [])
     ] as const;
     }
 
-export const getEvaluationGradesCourseAveragesRetrieveQueryKey = () => {
+export const getEvaluationGradesCourseAveragesRetrieveQueryKey = (params?: EvaluationGradesCourseAveragesRetrieveParams,) => {
     return [
-    `/api/evaluation/grades/course_averages/`
+    `/api/evaluation/grades/course_averages/`, ...(params ? [params]: [])
     ] as const;
     }
 
     
-export const getEvaluationGradesCourseAveragesRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>>, TError = unknown>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getEvaluationGradesCourseAveragesRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, EvaluationGradesCourseAveragesRetrieveParams['page']>, TError = unknown>(params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData, QueryKey, EvaluationGradesCourseAveragesRetrieveParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getEvaluationGradesCourseAveragesRetrieveInfiniteQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getEvaluationGradesCourseAveragesRetrieveInfiniteQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>> = ({ signal }) => evaluationGradesCourseAveragesRetrieve(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, QueryKey, EvaluationGradesCourseAveragesRetrieveParams['page']> = ({ signal, pageParam }) => evaluationGradesCourseAveragesRetrieve({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData, QueryKey, EvaluationGradesCourseAveragesRetrieveParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type EvaluationGradesCourseAveragesRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>>
 export type EvaluationGradesCourseAveragesRetrieveInfiniteQueryError = unknown
 
 
-export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>>, TError = unknown>(
-  options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>> & Pick<
+export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, EvaluationGradesCourseAveragesRetrieveParams['page']>, TError = unknown>(
+ params: undefined |  EvaluationGradesCourseAveragesRetrieveParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData, QueryKey, EvaluationGradesCourseAveragesRetrieveParams['page']>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>,
           TError,
-          Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>
+          Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, QueryKey
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>>, TError = unknown>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>> & Pick<
+export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, EvaluationGradesCourseAveragesRetrieveParams['page']>, TError = unknown>(
+ params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData, QueryKey, EvaluationGradesCourseAveragesRetrieveParams['page']>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>,
           TError,
-          Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>
+          Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, QueryKey
         > , 'initialData'
       >, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>>, TError = unknown>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, EvaluationGradesCourseAveragesRetrieveParams['page']>, TError = unknown>(
+ params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData, QueryKey, EvaluationGradesCourseAveragesRetrieveParams['page']>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>>, TError = unknown>(
-  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, EvaluationGradesCourseAveragesRetrieveParams['page']>, TError = unknown>(
+ params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData, QueryKey, EvaluationGradesCourseAveragesRetrieveParams['page']>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient 
  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getEvaluationGradesCourseAveragesRetrieveInfiniteQueryOptions(options)
+  const queryOptions = getEvaluationGradesCourseAveragesRetrieveInfiniteQueryOptions(params,options)
 
   const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
@@ -3165,16 +3156,16 @@ export function useEvaluationGradesCourseAveragesRetrieveInfinite<TData = Infini
 
 
 
-export const getEvaluationGradesCourseAveragesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+export const getEvaluationGradesCourseAveragesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError = unknown>(params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getEvaluationGradesCourseAveragesRetrieveQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getEvaluationGradesCourseAveragesRetrieveQueryKey(params);
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>> = ({ signal }) => evaluationGradesCourseAveragesRetrieve(requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>> = ({ signal }) => evaluationGradesCourseAveragesRetrieve(params, requestOptions, signal);
 
       
 
@@ -3188,7 +3179,7 @@ export type EvaluationGradesCourseAveragesRetrieveQueryError = unknown
 
 
 export function useEvaluationGradesCourseAveragesRetrieve<TData = Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>> & Pick<
+ params: undefined |  EvaluationGradesCourseAveragesRetrieveParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>,
           TError,
@@ -3198,7 +3189,7 @@ export function useEvaluationGradesCourseAveragesRetrieve<TData = Awaited<Return
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useEvaluationGradesCourseAveragesRetrieve<TData = Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>> & Pick<
+ params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>,
           TError,
@@ -3208,16 +3199,16 @@ export function useEvaluationGradesCourseAveragesRetrieve<TData = Awaited<Return
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useEvaluationGradesCourseAveragesRetrieve<TData = Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useEvaluationGradesCourseAveragesRetrieve<TData = Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ params?: EvaluationGradesCourseAveragesRetrieveParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof evaluationGradesCourseAveragesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
  , queryClient?: QueryClient 
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getEvaluationGradesCourseAveragesRetrieveQueryOptions(options)
+  const queryOptions = getEvaluationGradesCourseAveragesRetrieveQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

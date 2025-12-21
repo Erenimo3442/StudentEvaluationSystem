@@ -8,7 +8,15 @@
 
 export type CoreProgramOutcomesListParams = {
 /**
+ * Filter program outcomes by department ID
+ */
+department?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;
+/**
+ * Filter program outcomes by term ID
+ */
+term?: number;
 };

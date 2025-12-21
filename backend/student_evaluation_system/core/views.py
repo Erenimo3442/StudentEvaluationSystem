@@ -2,7 +2,8 @@ from rest_framework import generics, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from drf_spectacular.utils import extend_schema_view, extend_schema
+from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from django.db.models import Avg, F
 from .services.file_import import FileImportService
 from .services.file_import import FileImportError
@@ -45,6 +46,18 @@ class UniversityViewSet(viewsets.ModelViewSet):
     serializer_class = UniversitySerializer
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='university',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter departments by university ID'
+            ),
+        ]
+    )
+)
 class DepartmentViewSet(viewsets.ModelViewSet):
     """CRUD operations for departments."""
     queryset = Department.objects.select_related('university').all()
@@ -64,6 +77,24 @@ class DegreeLevelViewSet(viewsets.ModelViewSet):
     serializer_class = DegreeLevelSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='department',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter programs by department ID'
+            ),
+            OpenApiParameter(
+                name='degree_level',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter programs by degree level ID'
+            ),
+        ]
+    )
+)
 class ProgramViewSet(viewsets.ModelViewSet):
     """CRUD operations for programs."""
     queryset = Program.objects.select_related('department', 'degree_level').all()
@@ -97,6 +128,30 @@ class TermViewSet(viewsets.ModelViewSet):
         return Response({'detail': 'No active term found.'}, status=404)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='department',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter courses by department ID'
+            ),
+            OpenApiParameter(
+                name='term',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter courses by term ID'
+            ),
+            OpenApiParameter(
+                name='instructor',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter courses by instructor ID'
+            ),
+        ]
+    )
+)
 class CourseViewSet(viewsets.ModelViewSet):
     """CRUD operations for courses."""
     queryset = Course.objects.select_related('program', 'term').prefetch_related('instructors').all()
@@ -126,7 +181,23 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 @extend_schema_view(
-    list=extend_schema(tags=['Outcomes']),
+    list=extend_schema(
+        tags=['Outcomes'],
+        parameters=[
+            OpenApiParameter(
+                name='department',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter program outcomes by department ID'
+            ),
+            OpenApiParameter(
+                name='term',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter program outcomes by term ID'
+            ),
+        ]
+    ),
     retrieve=extend_schema(tags=['Outcomes']),
     create=extend_schema(tags=['Outcomes']),
     update=extend_schema(tags=['Outcomes']),
@@ -151,6 +222,18 @@ class ProgramOutcomeViewSet(viewsets.ModelViewSet):
         return queryset
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter learning outcomes by course ID'
+            ),
+        ]
+    )
+)
 class LearningOutcomeViewSet(viewsets.ModelViewSet):
     """CRUD operations for learning outcomes."""
     queryset = LearningOutcome.objects.select_related('course', 'created_by').all()
@@ -166,6 +249,18 @@ class LearningOutcomeViewSet(viewsets.ModelViewSet):
         return queryset
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter LO-PO mappings by course ID'
+            ),
+        ]
+    )
+)
 class LearningOutcomeProgramOutcomeMappingViewSet(viewsets.ModelViewSet):
     """CRUD operations for LO-PO mappings."""
     queryset = LearningOutcomeProgramOutcomeMapping.objects.select_related(
@@ -182,7 +277,26 @@ class LearningOutcomeProgramOutcomeMappingViewSet(viewsets.ModelViewSet):
         
         return queryset
 
-
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Scores'],
+        parameters=[
+            OpenApiParameter(
+                name='student',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter LO scores by student ID'
+            ),
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter LO scores by course ID'
+            ),
+        ]
+    ),
+    retrieve=extend_schema(tags=['Scores']),
+)
 class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
     """Read-only access to calculated LO scores."""
     queryset = StudentLearningOutcomeScore.objects.select_related(
@@ -202,7 +316,25 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
         
         return queryset
     
-    @action(detail=False, methods=['get'])
+    @extend_schema(
+        tags=['Analytics'],
+        responses={200: dict},  # Explicitly return dict, not paginated
+        parameters=[
+            OpenApiParameter(
+                name='student',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter by specific student ID (optional)'
+            ),
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter by specific course ID (optional)'
+            ),
+        ]
+    )
+    @action(detail=False, methods=['get'], pagination_class=None)
     def course_averages(self, request):
         """
         Calculate average learning outcome scores per course.
@@ -214,7 +346,8 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
         At least one parameter must be provided.
         
         Returns:
-        - List of courses with calculated average LO score
+        - List of courses with calculated average LO scores
+        {"course_id": int, "weighted_average": float}
         
         Examples:
         - /api/core/student-lo-scores/course_averages/?student=1 (all courses for student)
@@ -278,7 +411,20 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
         
         return Response(course_averages)
     
-    @action(detail=False, methods=['get'])
+    @extend_schema(
+        tags=['Analytics'],
+        responses={200: dict},
+        parameters=[
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Course ID (required)',
+                required=True
+            ),
+        ]
+    )
+    @action(detail=False, methods=['get'], pagination_class=None)
     def lo_averages(self, request):
         """
         Calculate average scores grouped by learning outcome for a course.
@@ -330,6 +476,26 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(result)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        tags=['Scores'],
+        parameters=[
+            OpenApiParameter(
+                name='student',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter PO scores by student ID'
+            ),
+            OpenApiParameter(
+                name='course',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                description='Filter PO scores by course ID'
+            ),
+        ]
+    ),
+    retrieve=extend_schema(tags=['Scores']),
+)
 class StudentProgramOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
     """Read-only access to calculated PO scores."""
     queryset = StudentProgramOutcomeScore.objects.select_related(

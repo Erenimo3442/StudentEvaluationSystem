@@ -8,7 +8,15 @@
 
 export type CoreStudentPoScoresListParams = {
 /**
+ * Filter PO scores by course ID
+ */
+course?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;
+/**
+ * Filter PO scores by student ID
+ */
+student?: number;
 };

@@ -6,13 +6,4 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type CoreDepartmentsListParams = {
-/**
- * A page number within the paginated result set.
- */
-page?: number;
-/**
- * Filter departments by university ID
- */
-university?: number;
-};
+export type CoreStudentLoScoresCourseAveragesRetrieve200 = {[key: string]: unknown};
