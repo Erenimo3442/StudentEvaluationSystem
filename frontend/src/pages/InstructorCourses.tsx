@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
@@ -12,50 +12,89 @@ import {
   PlusIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
-import { coreService } from '../services/api'
-import { Course } from '../types/index'
+import { 
+  coreCoursesList
+} from '../api/generated/core/core'
+import { 
+  evaluationGradesCourseAveragesRetrieve,
+evaluationEnrollmentsList 
+} from '../api/generated/evaluation/evaluation'
 
 const InstructorCourses = () => {
   const { user } = useAuth()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [loading, setLoading] = useState(true)
+  
+  const { data: coursesData, isLoading: coursesLoading } = useQuery({
+    queryKey: ['instructor-courses', user?.id],
+    queryFn: async () => {
+      // instructor parameter is now typed in CoreCoursesListParams (from OpenAPI schema)
+      const response = await coreCoursesList({ instructor: user?.id })
+      return response.results || []
+    },
+    enabled: !!user?.id
+  })
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const userId = user?.id || undefined
-        const coursesRes = await coreService.getCourses(undefined, userId)
-        // Filter courses where current user is the lecturer
-        setCourses(coursesRes.data)
-      } catch (error) {
-        console.error('Error fetching courses:', error)
-        setCourses([])
-      } finally {
-        setLoading(false)
+  const enrollmentQueries = useQueries({
+  queries: (coursesData || []).map((course) => ({
+    queryKey: ['course-enrollments', course.id],
+    queryFn: async () => {
+      const response = await evaluationEnrollmentsList(undefined, { params: { course: course.id } })
+      return {
+        courseId: course.id,
+        count: response.results?.length || 0
       }
-    }
+    },
+    enabled: !!coursesData?.length
+  }))
+})
 
-    fetchCourses()
-  }, [user])
+// Add average scores query
+const averageQueries = useQueries({
+  queries: (coursesData || []).map((course) => ({
+    queryKey: ['course-average', course.id],
+    queryFn: async () => {
+      const response = await evaluationGradesCourseAveragesRetrieve({ course: course.id })
+      return {
+        courseId: course.id,
+        average: response.score || null
+      }
+    },
+    enabled: !!coursesData?.length
+  }))
+})
 
-  const totalStudents = courses.reduce((sum, course) => {
-    // This would need to be fetched from the API
-    // For now, using a mock calculation
-    return sum + Math.floor(Math.random() * 50) + 20
-  }, 0)
-
-  const totalCredits = courses.reduce((sum, course) => sum + (course.credits || 0), 0)
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-secondary-600 font-medium">Loading your courses...</p>
-        </div>
-      </div>
-    )
+// Calculate total students from enrollment queries
+const totalStudents = enrollmentQueries.reduce((sum, query) => {
+  if (query.data) {
+    return sum + query.data.count
   }
+  return sum
+}, 0)
+
+const totalCredits = coursesData?.reduce((sum, course) => sum + (course.credits || 0), 0) || 0
+
+// Helper function to get performance badge variant
+const getPerformanceBadge = (score: number | null) => {
+  if (score === null) return { variant: 'secondary' as const, label: 'N/A' }
+  if (score >= 85) return { variant: 'success' as const, label: 'Excellent' }
+  if (score >= 70) return { variant: 'primary' as const, label: 'Good' }
+  if (score >= 60) return { variant: 'warning' as const, label: 'Average' }
+  return { variant: 'danger' as const, label: 'Needs Attention' }
+}
+
+const isLoadingData = coursesLoading || 
+  enrollmentQueries.some(q => q.isLoading) || 
+  averageQueries.some(q => q.isLoading)
+
+if (isLoadingData) {
+  return (
+    <div className="flex justify-center items-center min-h-96">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto"></div>
+        <p className="mt-4 text-secondary-600 font-medium">Loading your courses...</p>
+      </div>
+    </div>
+  )
+}
 
   return (
     <div className="space-y-8">
@@ -82,7 +121,7 @@ const InstructorCourses = () => {
             </div>
             <div>
               <p className="text-sm text-secondary-600 font-medium">Active Courses</p>
-              <p className="text-3xl font-bold text-primary-700">{courses.length}</p>
+              <p className="text-3xl font-bold text-primary-700">{  coursesData?.length || 0}</p>
             </div>
           </div>
         </Card>
@@ -113,14 +152,18 @@ const InstructorCourses = () => {
       </div>
 
       {/* Courses Grid */}
-      {courses.length > 0 ? (
+      {coursesData && coursesData.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => {
-            const studentCount = Math.floor(Math.random() * 50) + 20 // Mock data
-            const avgScore = Math.floor(Math.random() * 30) + 70 // Mock data
+          {coursesData.map((course, index) => {
+            // Get real data from queries
+            const enrollmentData = enrollmentQueries[index]?.data
+            const averageData = averageQueries[index]?.data
+            const studentCount = enrollmentData?.count ?? 0
+            const avgScore = averageData?.average ? Math.round(averageData.average) : null
+            const performanceBadge = getPerformanceBadge(avgScore)
             
             return (
-              <Card key={course.id} variant="hover" className="group">
+              <Card key={course.id} variant="hover" className="group relative">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="h-12 w-12 rounded-xl bg-primary-600 flex items-center justify-center text-white font-bold shadow-lg">
@@ -148,11 +191,26 @@ const InstructorCourses = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Students</span>
-                    <span className="font-medium text-secondary-900">{studentCount}</span>
+                    {enrollmentQueries[index]?.isLoading ? (
+                      <span className="text-secondary-400 animate-pulse">Loading...</span>
+                    ) : (
+                      <span className="font-medium text-secondary-900">{studentCount}</span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Avg Score</span>
-                    <span className="font-medium text-secondary-900">{avgScore}%</span>
+                    {averageQueries[index]?.isLoading ? (
+                      <span className="text-secondary-400 animate-pulse">Loading...</span>
+                    ) : avgScore !== null ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-secondary-900">{avgScore}%</span>
+                        <Badge variant={performanceBadge.variant} className="text-xs px-1.5 py-0.5">
+                          {performanceBadge.label}
+                        </Badge>
+                      </div>
+                    ) : (
+                      <span className="text-secondary-400">No data</span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Credits</span>
