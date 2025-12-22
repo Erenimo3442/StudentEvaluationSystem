@@ -1,34 +1,32 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
-import { coreService } from '../services/api'
+import { coreCoursesRetrieve, coreLearningOutcomesList } from '../api/generated/core/core'
 import FileUploadModal from '../components/FileUploadModal'
+import { coreStudentLoScoresList } from '../api/generated/scores/scores'
 
 const CourseDetail = () => {
 const { id: courseId } = useParams<{ id: string }>()
 const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false)
 const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
-  const fetchCourseData = async () => {
-      if (!courseId) return null
-      
-      const [courseRes, loRes, loScoresRes] = await Promise.all([
-        coreService.getCourse(parseInt(courseId)),
-        coreService.getCourseLearningOutcomes(parseInt(courseId)),
-        coreService.getStudentLOScores(undefined, parseInt(courseId)),
-      ])
-
-      return {
-        course: courseRes.data,
-        learningOutcomes: loRes.data,
-        loScores: loScoresRes.data,
-      }
-  }
-
-
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['course', courseId],
-    queryFn: fetchCourseData
+    queryFn: async () => {
+      if (!courseId) throw new Error('Course ID is required')
+      const courseResponse = await coreCoursesRetrieve(Number(courseId))
+      const loResponse = await coreLearningOutcomesList({
+        course: Number(courseId)
+      })
+      const loScoresResponse = await coreStudentLoScoresList({
+        course: Number(courseId)
+    })
+      return { 
+        course: courseResponse, 
+        learningOutcomes: loResponse.results || [],
+        loScores: loScoresResponse.results || [] 
+      }
+    }
   })
 
   const handleUploadComplete = (result: any) => {
@@ -49,7 +47,7 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
   }
 
   const getInstructorNames = () => {
-    if (!data?.course?.instructors || data.course.instructors.length === 0) {
+    if (!data?.course?.instructors|| data.course.instructors.length === 0) {
       return 'Not assigned'
     }
     return data.course.instructors.map((instructor: any) =>
@@ -167,8 +165,8 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
                 <span className="font-medium">{data.loScores?.length || 0}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Course Level:</span>
-                <span className="font-medium capitalize">{data.course.level || 'undergraduate'}</span>
+                  <span className="text-gray-600">Course Program:</span>
+                  <span className="font-medium capitalize">{data.course.program.name || 'Unknown'}</span>
               </div>
             </div>
           </div>
