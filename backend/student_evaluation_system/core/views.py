@@ -22,7 +22,8 @@ from .serializers import (
     ProgramOutcomeSerializer, CoreLearningOutcomeSerializer,
     LearningOutcomeProgramOutcomeMappingSerializer,
     StudentLearningOutcomeScoreSerializer, StudentProgramOutcomeScoreSerializer,
-    FileImportResponseSerializer, FileValidationResponseSerializer
+    FileImportResponseSerializer, FileValidationResponseSerializer,
+    CourseAverageSerializer, LearningOutcomeAverageSerializer
 )
 from users.models import StudentProfile
 from users.serializers import StudentProfileSerializer
@@ -318,7 +319,7 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
     
     @extend_schema(
         tags=['Analytics'],
-        responses={200: dict},  # Explicitly return dict, not paginated
+        responses={200: CourseAverageSerializer(many=True)},
         parameters=[
             OpenApiParameter(
                 name='student',
@@ -413,7 +414,7 @@ class StudentLearningOutcomeScoreViewSet(viewsets.ReadOnlyModelViewSet):
     
     @extend_schema(
         tags=['Analytics'],
-        responses={200: dict},
+        responses={200: LearningOutcomeAverageSerializer(many=True)},
         parameters=[
             OpenApiParameter(
                 name='course',

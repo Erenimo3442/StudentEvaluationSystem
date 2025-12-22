@@ -1,4 +1,4 @@
-import React, { useContext, createContext, useEffect, useState, ReactNode } from 'react'
+import React, { useContext, createContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { useUsersAuthLoginCreate, useUsersAuthMeRetrieve } from '../api/generated/authentication/authentication'
 import { useQueryClient } from '@tanstack/react-query'
 import { CustomUser } from '../api/model/customUser'
@@ -70,7 +70,32 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   })
 
-  const login = async (username: string, password: string) => {
+  const logout = useCallback(() => {
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    setUser(null)
+    
+    // Clear all cached queries
+    queryClient.clear()
+    
+    // Redirect to login page
+    window.location.href = '/login'
+  }, [queryClient])
+
+  useEffect(() => {
+    if (currentUser) {
+      setUser(currentUser)
+    }
+    if (userError instanceof Error) {
+      // Token is invalid, clear it
+      logout()
+    }
+    if (!userLoading) {
+      setIsLoading(false)
+    }
+  }, [currentUser, userLoading, userError, logout])
+
+  const login = useCallback(async (username: string, password: string) => {
     try {
       // Create login data - we need to cast to include password since the type doesn't have it
       const loginData = { 
@@ -83,27 +108,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       throw error
     }
-  }
+  }, [loginMutation])
 
-  const logout = () => {
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
-    setUser(null)
-    
-    // Clear all cached queries
-    queryClient.clear()
-    
-    // Redirect to login page
-    window.location.href = '/login'
-  }
-
-  const value: AuthContextType = {
+  const value: AuthContextType = React.useMemo(() => ({
     user,
     login,
     logout,
     isLoading: isLoading || loginMutation.isPending,
     isAuthenticated: !!user,
-  }
+  }), [user, login, logout, isLoading, loginMutation.isPending])
 
   return React.createElement(AuthContext.Provider, { value }, children)
 }
