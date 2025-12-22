@@ -612,12 +612,27 @@ class BaseFileImportViewSet(viewsets.GenericViewSet):
             'multipart/form-data': {
                 'type': 'object',
                 'properties': {
-                    'file': {'type': 'string', 'format': 'binary'},
-                    'sheet_name': {'type': 'string'}
+                    'file': {'type': 'string', 'format': 'binary'}
                 },
                 'required': ['file']
             }
         },
+        parameters=[
+            OpenApiParameter(
+                name='course_code',
+                type=OpenApiTypes.STR,
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description='Code of the course for which scores are being imported'
+            ),            
+            OpenApiParameter(
+                name='term_id',
+                type=OpenApiTypes.INT,
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description='ID of the academic term for which scores are being imported'
+            )
+        ],
         responses={200: FileImportResponseSerializer, 400: dict},
         tags=['File Import - Assessment Scores']
     ),
@@ -633,6 +648,22 @@ class BaseFileImportViewSet(viewsets.GenericViewSet):
                 'required': ['file']
             }
         },
+        parameters=[
+            OpenApiParameter(
+                name='course_code',
+                type=OpenApiTypes.STR,
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description='Code of the course for which scores are being imported'
+            ),            
+            OpenApiParameter(
+                name='term_id',
+                type=OpenApiTypes.INT,
+                required=True,
+                location=OpenApiParameter.QUERY,
+                description='ID of the academic term for which scores are being imported'
+            )
+        ],
         responses={200: FileValidationResponseSerializer, 400: dict},
         tags=['File Import - Assessment Scores']
     )
