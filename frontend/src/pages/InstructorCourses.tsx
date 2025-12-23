@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -12,17 +13,23 @@ import {
   PlusIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
-import { 
+import {
   coreCoursesList
 } from '../api/generated/core/core'
-import { 
-  evaluationGradesCourseAveragesRetrieve,
-evaluationEnrollmentsList 
+import {
+  evaluationGradesCourseAveragesRetrieve
 } from '../api/generated/evaluation/evaluation'
+
+interface CourseStatsData {
+  courseId: number
+  studentCount: number
+  studentIds: number[]
+  average: number | null
+}
 
 const InstructorCourses = () => {
   const { user } = useAuth()
-  
+
   const { data: coursesData, isLoading: coursesLoading } = useQuery({
     queryKey: ['instructor-courses', user?.id],
     queryFn: async () => {
@@ -33,57 +40,57 @@ const InstructorCourses = () => {
     enabled: !!user?.id
   })
 
-  const enrollmentQueries = useQueries({
-  queries: (coursesData || []).map((course) => ({
-    queryKey: ['course-enrollments', course.id],
-    queryFn: async () => {
-      const response = await evaluationEnrollmentsList(undefined, { params: { course: course.id } })
-      return {
-        courseId: course.id,
-        count: response.results?.length || 0
+  // Combined query for both student counts and average scores using grade averages API
+  const courseStatsQueries = useQueries({
+    queries: (coursesData || []).map((course) => ({
+      queryKey: ['course-stats', course.id],
+      queryFn: async () => {
+        const response = await evaluationGradesCourseAveragesRetrieve({ course: course.id, per_student: true })
+        // response is an array of student grade averages with student_id
+        if (Array.isArray(response) && response.length > 0) {
+          const validAverages = response
+            .map(r => r.weighted_average)
+            .filter((avg): avg is number => avg !== null)
+          const courseAvg = validAverages.length > 0
+            ? validAverages.reduce((sum, avg) => sum + avg, 0) / validAverages.length
+            : null
+          // Extract student IDs from the response (each entry has student_id)
+          const studentIds = response
+            .map(r => (r as any).student_id)
+            .filter((id): id is number => id != null)
+
+          return {
+            courseId: course.id,
+            studentCount: studentIds.length,
+            studentIds,
+            average: courseAvg
+          } as CourseStatsData
+        }
+        return {
+          courseId: course.id,
+          studentCount: 0,
+          studentIds: [],
+          average: null
+        } as CourseStatsData
+      },
+      enabled: !!coursesData?.length
+    }))
+  })
+
+  // Calculate total UNIQUE students from all course stats
+  const totalStudents = useMemo(() => {
+    const allStudentIds = new Set<number>()
+    courseStatsQueries.forEach(query => {
+      if (query.data?.studentIds) {
+        query.data.studentIds.forEach((id: number) => allStudentIds.add(id))
       }
-    },
-    enabled: !!coursesData?.length
-  }))
-})
+    })
+    return allStudentIds.size
+  }, [courseStatsQueries])
 
-// Add average scores query
-const averageQueries = useQueries({
-  queries: (coursesData || []).map((course) => ({
-    queryKey: ['course-average', course.id],
-    queryFn: async () => {
-      const response = await evaluationGradesCourseAveragesRetrieve({ course: course.id })
-      return {
-        courseId: course.id,
-        average: response.score || null
-      }
-    },
-    enabled: !!coursesData?.length
-  }))
-})
+    const totalCredits = coursesData?.reduce((sum, course) => sum + (course.credits || 0), 0) || 0
 
-// Calculate total students from enrollment queries
-const totalStudents = enrollmentQueries.reduce((sum, query) => {
-  if (query.data) {
-    return sum + query.data.count
-  }
-  return sum
-}, 0)
-
-const totalCredits = coursesData?.reduce((sum, course) => sum + (course.credits || 0), 0) || 0
-
-// Helper function to get performance badge variant
-const getPerformanceBadge = (score: number | null) => {
-  if (score === null) return { variant: 'secondary' as const, label: 'N/A' }
-  if (score >= 85) return { variant: 'success' as const, label: 'Excellent' }
-  if (score >= 70) return { variant: 'primary' as const, label: 'Good' }
-  if (score >= 60) return { variant: 'warning' as const, label: 'Average' }
-  return { variant: 'danger' as const, label: 'Needs Attention' }
-}
-
-const isLoadingData = coursesLoading || 
-  enrollmentQueries.some(q => q.isLoading) || 
-  averageQueries.some(q => q.isLoading)
+  const isLoadingData = coursesLoading || courseStatsQueries.some(q => q.isLoading)
 
 if (isLoadingData) {
   return (
@@ -155,13 +162,11 @@ if (isLoadingData) {
       {coursesData && coursesData.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {coursesData.map((course, index) => {
-            // Get real data from queries
-            const enrollmentData = enrollmentQueries[index]?.data
-            const averageData = averageQueries[index]?.data
-            const studentCount = enrollmentData?.count ?? 0
-            const avgScore = averageData?.average ? Math.round(averageData.average) : null
-            const performanceBadge = getPerformanceBadge(avgScore)
-            
+            // Get real data from combined query
+            const statsData = courseStatsQueries[index]?.data
+            const studentCount = statsData?.studentCount ?? 0
+            const avgScore = statsData?.average ? Math.round(statsData.average) : null
+
             return (
               <Card key={course.id} variant="hover" className="group relative">
                 <div className="flex items-start justify-between mb-4">
@@ -183,15 +188,15 @@ if (isLoadingData) {
                     {course.credits} CR
                   </Badge>
                 </div>
-                
+
                 <h4 className="font-medium text-secondary-900 mb-3 line-clamp-2">
                   {course.name}
                 </h4>
-                
+
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Students</span>
-                    {enrollmentQueries[index]?.isLoading ? (
+                    {courseStatsQueries[index]?.isLoading ? (
                       <span className="text-secondary-400 animate-pulse">Loading...</span>
                     ) : (
                       <span className="font-medium text-secondary-900">{studentCount}</span>
@@ -199,15 +204,10 @@ if (isLoadingData) {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Avg Score</span>
-                    {averageQueries[index]?.isLoading ? (
+                    {courseStatsQueries[index]?.isLoading ? (
                       <span className="text-secondary-400 animate-pulse">Loading...</span>
                     ) : avgScore !== null ? (
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-secondary-900">{avgScore}%</span>
-                        <Badge variant={performanceBadge.variant} className="text-xs px-1.5 py-0.5">
-                          {performanceBadge.label}
-                        </Badge>
-                      </div>
+                      <span className="font-medium text-secondary-900">{avgScore}</span>
                     ) : (
                       <span className="text-secondary-400">No data</span>
                     )}
