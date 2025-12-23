@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
@@ -11,37 +12,24 @@ import {
   UserIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline'
-import { evaluationService } from '../services/api'
-import { Enrollment } from '../types/index'
+import { evaluationEnrollmentsList } from '../api/generated/evaluation/evaluation'
 
 const StudentCourses = () => {
   const { user } = useAuth()
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      if (!user) return
-      
-      try {
-        const enrollmentsRes = await evaluationService.getEnrollments(user.id)
-        // Handle paginated responses (data.results) or direct arrays
-        const enrollmentsData = (enrollmentsRes.data as any).results || enrollmentsRes.data
-        setEnrollments(Array.isArray(enrollmentsData) ? enrollmentsData : [])
-      } catch (error) {
-        console.error('Error fetching courses:', error)
-        setEnrollments([])
-      } finally {
-        setLoading(false)
-      }
-    }
+  const { data, isLoading } = useQuery({
+    queryKey: ['studentEnrollments', user?.id],
+    queryFn: () => evaluationEnrollmentsList({ student: user!.id }),
+    enabled: !!user,
+  })
 
-    fetchCourses()
-  }, [user])
+  const enrollments = useMemo(() => data?.results || [], [data])
+  const totalCredits = useMemo(
+    () => enrollments.reduce((sum, e: any) => sum + (e.course.credits || 0), 0),
+    [enrollments]
+  )
 
-  const totalCredits = enrollments.reduce((sum, e) => sum + (e.course.credits || 0), 0)
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-96">
         <div className="text-center">
@@ -94,7 +82,7 @@ const StudentCourses = () => {
             <div>
               <p className="text-sm text-secondary-600 font-medium">Completed</p>
               <p className="text-3xl font-bold text-emerald-700">
-                {enrollments.filter(e => e.grade).length}
+                {enrollments.filter(e => e.id).length}
               </p>
             </div>
           </div>
@@ -104,7 +92,7 @@ const StudentCourses = () => {
       {/* Courses Grid */}
       {enrollments.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {enrollments.map((enrollment) => (
+          {enrollments.map(enrollment => (
             <Link
               key={enrollment.id}
               to={`/student/courses/${enrollment.course.id}`}
@@ -138,29 +126,22 @@ const StudentCourses = () => {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center text-sm text-secondary-600">
                     <UserIcon className="h-4 w-4 mr-2" />
-                    {enrollment.course.lecturer 
-                      ? `${enrollment.course.lecturer.first_name} ${enrollment.course.lecturer.last_name}`
+                    {enrollment.course.instructors.length > 0
+                      ? `${enrollment.course.instructors[0].first_name} ${enrollment.course.instructors[0].last_name}`
                       : 'Not assigned'
                     }
                   </div>
                   <div className="flex items-center text-sm text-secondary-600">
-                    <ClockIcon className="h-4 w-4 mr-2" />
+                    <AcademicCapIcon className="h-4 w-4 mr-2" />
                     {enrollment.course.credits} credits
                   </div>
                 </div>
                 
                 <div className="mt-4 pt-4 border-t border-secondary-100">
-                  {enrollment.grade ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-secondary-600">Final Grade</span>
-                      <Badge variant="success">{enrollment.grade}</Badge>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-secondary-600">Status</span>
-                      <Badge variant="info">In Progress</Badge>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-secondary-600">Status</span>
+                    <Badge variant="info">In Progress</Badge>
+                  </div>
                 </div>
               </Card>
             </Link>

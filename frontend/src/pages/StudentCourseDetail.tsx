@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import React, { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
+import { useQueries } from '@tanstack/react-query'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
 import { LazyChartWidget as ChartWidget } from '../components/ui/LazyChartWidget'
@@ -9,89 +10,74 @@ import {
   AcademicCapIcon,
   ChartPieIcon,
 } from '@heroicons/react/24/outline'
-import { coreService, evaluationService } from '../services/api'
-import { Course, LearningOutcomeScore } from '../types/index'
-
-interface Assessment {
-  id: number
-  name: string
-  assessment_type: string
-  total_score: number
-  weight: number
-  date: string
-}
-
-interface StudentGrade {
-  id: number
-  student: number
-  assessment: Assessment
-  score: number
-}
-
-interface LearningOutcome {
-  id: number
-  code: string
-  description: string
-}
+import { coreCoursesRetrieve, coreCoursesLearningOutcomesRetrieve } from '../api/generated/core/core'
+import { coreStudentLoScoresList } from '../api/generated/scores/scores'
+import { evaluationGradesList } from '../api/generated/evaluation/evaluation'
+import { coreStudentLoScoresCourseAveragesRetrieve } from '../api/generated/analytics/analytics'
 
 type TabType = 'assessments' | 'outcomes' | 'analytics'
 
 const StudentCourseDetail = () => {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
-  const [course, setCourse] = useState<Course | null>(null)
-  const [loScores, setLoScores] = useState<LearningOutcomeScore[]>([])
-  const [learningOutcomes, setLearningOutcomes] = useState<LearningOutcome[]>([])
-  const [studentGrades, setStudentGrades] = useState<StudentGrade[]>([])
-  const [weightedAverage, setWeightedAverage] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<TabType>('assessments')
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!id || !user) return
+  const results = useQueries({
+    queries: [
+      {
+        queryKey: ['course', id],
+        queryFn: () => coreCoursesRetrieve(parseInt(id!)),
+        enabled: !!id,
+      },
+      {
+        queryKey: ['loScores', user?.id, id],
+        queryFn: () => coreStudentLoScoresList({ student: user!.id, course: parseInt(id!) }),
+        enabled: !!user && !!id,
+      },
+      {
+        queryKey: ['studentGrades', user?.id, id],
+        queryFn: () => evaluationGradesList({ student: user!.id, assessment: parseInt(id!) }),
+        enabled: !!user && !!id,
+      },
+      {
+        queryKey: ['learningOutcomes', id],
+        queryFn: () => coreCoursesLearningOutcomesRetrieve(parseInt(id!)),
+        enabled: !!id,
+      },
+      {
+        queryKey: ['courseAverages', user?.id, id],
+        queryFn: () => coreStudentLoScoresCourseAveragesRetrieve({ student: user!.id, course: parseInt(id!) }),
+        enabled: !!user && !!id,
+      },
+    ],
+  })
 
-      try {
-        const [courseRes, loScoresRes, gradesRes, losRes, courseAvgRes] = await Promise.all([
-          coreService.getCourse(parseInt(id)),
-          coreService.getStudentLOScores(user.id, parseInt(id)),
-          evaluationService.getStudentGrades(user.id, parseInt(id)),
-          coreService.getCourseLearningOutcomes(parseInt(id)),
-          evaluationService.getGradeBasedCourseAverages(user.id, parseInt(id)),
-        ])
+  const [courseQuery, loScoresQuery, gradesQuery, learningOutcomesQuery, courseAvgQuery] = results
+  const loading = results.some(q => q.isLoading)
 
-        setCourse(courseRes.data)
-        const loData = (loScoresRes.data as any).results || loScoresRes.data
-        setLoScores(Array.isArray(loData) ? loData : [])
-        const gradesData = Array.isArray(gradesRes.data) ? gradesRes.data : []
-        setStudentGrades(gradesData)
-        const losData = Array.isArray(losRes.data) ? losRes.data : []
-        setLearningOutcomes(losData)
-        
-        // Get the weighted average from backend
-        if (courseAvgRes && courseAvgRes.length > 0) {
-          setWeightedAverage(courseAvgRes[0].weighted_average)
-        }
-      } catch (error) {
-        console.error('Error fetching course data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  const course = useMemo(() => courseQuery.data || null, [courseQuery.data])
+  const loScores = useMemo(() => loScoresQuery.data?.results || [], [loScoresQuery.data])
+  const studentGrades = useMemo(() => gradesQuery.data?.results || [], [gradesQuery.data])
+  const learningOutcomes = useMemo(() => {
+    const data = learningOutcomesQuery.data
+    return Array.isArray(data) ? data : []
+  }, [learningOutcomesQuery.data])
+  const weightedAverage = useMemo(() => {
+    const avgData = courseAvgQuery.data
+    return avgData && Array.isArray(avgData) && avgData.length > 0 ? avgData[0].weighted_average : null
+  }, [courseAvgQuery.data])
 
-    fetchData()
-  }, [id, user])
+  const [activeTab, setActiveTab] = React.useState<TabType>('assessments')
 
   // Check if scores are already in percentage (0-100) or decimal (0-1) format
   const scoreMultiplier =
-    loScores.length > 0 && loScores[0].score <= 1 ? 100 : 1
+    loScores.length > 0 && loScores[0]?.score && loScores[0].score <= 1 ? 100 : 1
 
   // Bar Chart Data for Assessment Scores
   const barChartData = {
     series: [
       {
         name: 'Score',
-        data: loScores.map((s) => Math.round(s.score * scoreMultiplier)),
+        data: loScores.map((s) => Math.round((s.score || 0) * scoreMultiplier)),
       },
     ],
     options: {
@@ -158,7 +144,7 @@ const StudentCourseDetail = () => {
     series: [
       {
         name: 'Achievement',
-        data: loScores.map((s) => Math.round(s.score * scoreMultiplier)),
+        data: loScores.map((s) => Math.round((s.score || 0) * scoreMultiplier)),
       },
     ],
     options: {
@@ -174,7 +160,7 @@ const StudentCourseDetail = () => {
       fill: { opacity: 0.3 },
       markers: { size: 4 },
       xaxis: {
-        categories: loScores.map((s) => s.learning_outcome.code),
+        categories: loScores.map((s) => s.learning_outcome?.code || ''),
         labels: {
           style: {
             fontSize: '12px',
@@ -295,12 +281,12 @@ const StudentCourseDetail = () => {
                       type="bar"
                       series={[{
                         name: 'Score',
-                        data: studentGrades.map((g) => Math.round((g.score / g.assessment.total_score) * 100)),
+                        data: studentGrades.map((g) => Math.round((g.score / (g.assessment?.total_score || 1)) * 100)),
                       }]}
                       options={{
                         ...barChartData.options,
                         xaxis: {
-                          categories: studentGrades.map((g) => g.assessment.name),
+                          categories: studentGrades.map((g) => g.assessment?.name || ''),
                           labels: { style: { fontSize: '12px' } },
                         },
                       }}
@@ -321,9 +307,9 @@ const StudentCourseDetail = () => {
                           type="radar"
                           series={[{
                             name: 'Score',
-                            data: learningOutcomes.map((lo) => {
-                              const scoreData = loScores.find((s) => s.learning_outcome.id === lo.id)
-                              return scoreData ? Math.round(scoreData.score * scoreMultiplier) : 0
+                            data: learningOutcomes.map((lo: any) => {
+                              const scoreData = loScores.find((s) => s.learning_outcome?.id === lo.id)
+                              return scoreData ? Math.round((scoreData.score || 0) * scoreMultiplier) : 0
                             }),
                           }]}
                           options={{
@@ -346,7 +332,7 @@ const StudentCourseDetail = () => {
                               },
                             },
                             xaxis: {
-                              categories: learningOutcomes.map((lo) => lo.code),
+                              categories: learningOutcomes.map((lo: any) => lo.code),
                               labels: { 
                                 style: { fontSize: '11px', fontWeight: 600 },
                                 offsetY: 0,
@@ -381,25 +367,25 @@ const StudentCourseDetail = () => {
                 {/* Assessment List */}
                 <div className="space-y-4">
                   {studentGrades.map((grade) => {
-                    const percentage = (grade.score / grade.assessment.total_score) * 100
+                    const percentage = (grade.score / (grade.assessment?.total_score || 1)) * 100
                     return (
                       <Card key={grade.id} className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
                             <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-lg text-sm font-semibold capitalize">
-                              {grade.assessment.assessment_type}
+                              {(grade.assessment as any)?.assessment_type || 'Assessment'}
                             </span>
                             <div>
-                              <p className="font-medium text-gray-900">{grade.assessment.name}</p>
+                              <p className="font-medium text-gray-900">{grade.assessment?.name}</p>
                               <p className="text-sm text-gray-500">
-                                Weight: {(grade.assessment.weight * 100).toFixed(0)}%
+                                Weight: {((grade.assessment?.weight || 0) * 100).toFixed(0)}%
                               </p>
                             </div>
                           </div>
                         </div>
                         <div className="ml-4 text-right">
                           <p className="text-2xl font-bold text-primary-600">
-                            {grade.score}/{grade.assessment.total_score}
+                            {grade.score}/{grade.assessment?.total_score || 0}
                           </p>
                           <p className="text-sm text-gray-500">{percentage.toFixed(1)}%</p>
                         </div>
@@ -427,10 +413,10 @@ const StudentCourseDetail = () => {
             <h2 className="text-xl font-semibold text-gray-900">Learning Outcomes</h2>
             {learningOutcomes.length > 0 ? (
               <div className="space-y-4">
-                {learningOutcomes.map((lo) => {
+                {learningOutcomes.map((lo: any) => {
                   // Find matching score if available
                   const scoreData = loScores.find(
-                    (s) => s.learning_outcome.id === lo.id
+                    (s) => s.learning_outcome?.id === lo.id
                   )
                   return (
                     <Card key={lo.id} className="flex items-center justify-between">
@@ -445,7 +431,7 @@ const StudentCourseDetail = () => {
                       {scoreData && (
                         <div className="ml-4">
                           <span className="text-2xl font-bold text-primary-600">
-                            {Math.round(scoreData.score * scoreMultiplier)}%
+                            {Math.round((scoreData.score || 0) * scoreMultiplier)}%
                           </span>
                         </div>
                       )}
@@ -475,7 +461,7 @@ const StudentCourseDetail = () => {
                 // Find highest and lowest scoring assessments
                 const gradesWithPercentage = studentGrades.map((g) => ({
                   ...g,
-                  percentage: (g.score / g.assessment.total_score) * 100
+                  percentage: (g.score / (g.assessment?.total_score || 1)) * 100
                 }))
                 const highestGrade = gradesWithPercentage.reduce((max, g) => 
                   g.percentage > max.percentage ? g : max

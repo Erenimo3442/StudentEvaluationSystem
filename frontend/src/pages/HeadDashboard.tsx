@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Card } from '../components/ui/Card'
 import { LazyChartWidget as ChartWidget } from '../components/ui/LazyChartWidget'
 import {
@@ -9,27 +10,16 @@ import {
   ArrowDownTrayIcon,
   DocumentIcon
 } from '@heroicons/react/24/outline'
-import { coreService } from '../services/api'
-import { Program } from '../types/index'
+import { coreProgramsList } from '../api/generated/core/core'
 
 const HeadDashboard = () => {
-  const [programs, setPrograms] = useState<Program[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, isLoading } = useQuery({
+    queryKey: ['programs'],
+    queryFn: () => coreProgramsList({}),
+  })
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const programsRes = await coreService.getPrograms()
-        setPrograms(programsRes.data)
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
+  const programs = useMemo(() => data?.results || [], [data])
+  const loading = isLoading
 
   // Mock data for Program Performance (replace with real API call later)
   const programPerformance = {
@@ -39,7 +29,7 @@ const HeadDashboard = () => {
     }],
     options: {
       xaxis: {
-        categories: programs.map(p => p.code) // Use real program codes
+        categories: programs.map((p: any) => p.code) // Use real program codes
       },
       colors: ['#0ea5e9']
     }
