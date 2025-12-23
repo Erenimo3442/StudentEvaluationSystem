@@ -199,40 +199,40 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
     return { loCodes, students }
   }, [data?.learningOutcomes, data?.loScores])
 
-  // Get color for heatmap cell - using a modern gradient from deep red to bright green
+  // Get color for heatmap cell - using a modern gradient from red to green
   const getHeatmapColor = (score: number): string => {
     if (score === 0) return 'rgb(249, 250, 251)' // gray-50
 
     const normalized = Math.max(0, Math.min(100, score)) / 100
 
-    // Beautiful gradient: Deep Red (0) → Orange (25) → Yellow (50) → Lime (75) → Bright Green (100)
+    // Modern gradient: Red (0) → Coral (25) → Gold (50) → Lime (75) → Emerald (100)
     if (normalized < 0.25) {
-      // Deep red to orange
+      // Red to coral
       const t = normalized / 0.25
-      const r = 220 - Math.round(29 * t)  // 220 → 191
-      const g = 38 + Math.round(64 * t)   // 38 → 102
-      const b = 38 + Math.round(14 * t)   // 38 → 52
+      const r = 239 - Math.round(11 * t)  // 239 → 228 (red-500 to coral)
+      const g = 68 + Math.round(46 * t)   // 68 → 114
+      const b = 68 + Math.round(14 * t)   // 68 → 82
       return `rgb(${r}, ${g}, ${b})`
     } else if (normalized < 0.5) {
-      // Orange to yellow
+      // Coral to gold
       const t = (normalized - 0.25) / 0.25
-      const r = 191 + Math.round(64 * t)  // 191 → 255
-      const g = 102 + Math.round(141 * t) // 102 → 243
-      const b = 52 + Math.round(187 * t)  // 52 → 239
+      const r = 228 + Math.round(24 * t)  // 228 → 252
+      const g = 114 + Math.round(97 * t)  // 114 → 211
+      const b = 82 - Math.round(27 * t)   // 82 → 55
       return `rgb(${r}, ${g}, ${b})`
     } else if (normalized < 0.75) {
-      // Yellow to lime
+      // Gold to lime
       const t = (normalized - 0.5) / 0.25
-      const r = 255 - Math.round(109 * t) // 255 → 146
-      const g = 243 + Math.round(12 * t)  // 243 → 255
-      const b = 239 - Math.round(104 * t)  // 239 → 135
+      const r = 252 - Math.round(68 * t)  // 252 → 184 (gold to lime)
+      const g = 211 + Math.round(33 * t)  // 211 → 244
+      const b = 55 + Math.round(58 * t)   // 55 → 113
       return `rgb(${r}, ${g}, ${b})`
     } else {
-      // Lime to bright green
+      // Lime to emerald
       const t = (normalized - 0.75) / 0.25
-      const r = 146 - Math.round(96 * t)   // 146 → 50
-      const g = 255                        // 255
-      const b = 135 - Math.round(73 * t)   // 135 → 62
+      const r = 184 - Math.round(150 * t) // 184 → 34 (emerald-500)
+      const g = 244 - Math.round(42 * t)  // 244 → 202
+      const b = 113 + Math.round(19 * t)  // 113 → 132
       return `rgb(${r}, ${g}, ${b})`
     }
   }
@@ -381,9 +381,9 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
 
                 // Get color based on median
                 const getBoxColor = (median: number) => {
-                  if (median >= 80) return { main: '#32CD32', bg: 'rgba(50, 205, 50, 0.2)' } // Lime green
-                  if (median >= 60) return { main: '#F59E0B', bg: 'rgba(245, 158, 11, 0.2)' } // Amber
-                  return { main: '#DC2626', bg: 'rgba(220, 38, 38, 0.2)' } // Red
+                  if (median >= 80) return { main: '#22c55e', bg: 'rgba(34, 197, 94, 0.15)' } // Emerald-500
+                  if (median >= 60) return { main: '#eab308', bg: 'rgba(234, 179, 8, 0.15)' } // Yellow-500
+                  return { main: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' } // Red-500
                 }
                 const boxColor = getBoxColor(box.median)
 
@@ -395,11 +395,11 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
                         {/* Background gradient */}
                         <defs>
                           <linearGradient id="gradientScale" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#DC2626" stopOpacity="0.15" />
-                            <stop offset="25%" stopColor="#F97316" stopOpacity="0.15" />
-                            <stop offset="50%" stopColor="#FBBF24" stopOpacity="0.15" />
-                            <stop offset="75%" stopColor="#A3E635" stopOpacity="0.15" />
-                            <stop offset="100%" stopColor="#32CD32" stopOpacity="0.15" />
+                            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.12" />
+                            <stop offset="25%" stopColor="#f97316" stopOpacity="0.12" />
+                            <stop offset="50%" stopColor="#eab308" stopOpacity="0.12" />
+                            <stop offset="75%" stopColor="#84cc16" stopOpacity="0.12" />
+                            <stop offset="100%" stopColor="#22c55e" stopOpacity="0.12" />
                           </linearGradient>
                         </defs>
                         <rect x="0" y={5} width={boxWidth} height={30} fill="url(#gradientScale)" rx={4} />
@@ -548,8 +548,8 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
         {heatmapData.students.length > 0 && (
           <div className="mt-6 flex items-center justify-center space-x-4">
             <span className="text-xs font-medium text-gray-700">0%</span>
-            <div className="w-64 h-4 rounded" style={{
-              background: 'linear-gradient(to right, #DC2626 0%, #F97316 25%, #FBBF24 50%, #A3E635 75%, #32CD32 100%)'
+            <div className="w-64 h-4 rounded shadow-sm" style={{
+              background: 'linear-gradient(to right, #ef4444 0%, #f97316 25%, #eab308 50%, #84cc16 75%, #22c55e 100%)'
             }}></div>
             <span className="text-xs font-medium text-gray-700">100%</span>
           </div>
