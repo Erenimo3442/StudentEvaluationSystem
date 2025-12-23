@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
-import StudentLayout from './components/StudentLayout'
 
 // Lazy load all page components for code splitting
 const Login = lazy(() => import('./pages/Login'))
@@ -33,11 +32,13 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
       
-      {/* Student routes with custom layout */}
-      <Route path="/student" element={<StudentLayout />}>
+      {/* Student routes with shared layout */}
+      <Route path="/student" element={<Layout showOnlyCoreItems={true} />}>
         <Route index element={<StudentDashboard />} />
         <Route path="courses" element={<StudentCourses />} />
-        <Route path="courses/:id" element={<StudentCourseDetail />} />
+      </Route>
+      <Route path="/student/courses/:id" element={<Layout showOnlyCoreItems={false} />}>
+        <Route index element={<StudentCourseDetail />} />
       </Route>
       
       <Route path="/" element={<Layout />}>

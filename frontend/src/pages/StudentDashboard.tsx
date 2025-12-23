@@ -5,7 +5,7 @@ import { LazyChartWidget as ChartWidget } from '../components/ui/LazyChartWidget
 import { ChartBarIcon } from '@heroicons/react/24/outline'
 import { useQueries } from '@tanstack/react-query'
 import { evaluationEnrollmentsList } from '../api/generated/evaluation/evaluation'
-import { coreStudentLoScoresCourseAveragesRetrieve } from '../api/generated/analytics/analytics'
+import { evaluationGradesCourseAveragesRetrieve } from '../api/generated/evaluation/evaluation'
 import { coreStudentPoScoresList } from '../api/generated/scores/scores'
 
 const StudentDashboard = () => {
@@ -25,8 +25,8 @@ const StudentDashboard = () => {
       },
       {
         queryKey: ['courseAverages', user?.id],
-        queryFn: () => coreStudentLoScoresCourseAveragesRetrieve({ student: user!.id }),
-        enabled: !!user,
+        queryFn: () => evaluationGradesCourseAveragesRetrieve({ student: user!.id }),
+        enabled: !!user
       },
     ],
   })
@@ -93,12 +93,6 @@ const StudentDashboard = () => {
       colors: ['#0d9488'],
       tooltip: {
         enabled: true,
-        y: {
-          formatter: (val: number, { dataPointIndex }: { dataPointIndex: number }) => {
-            const outcome = poScores[dataPointIndex]?.program_outcome
-            return outcome ? `${val}% - ${outcome.description}` : `${val}%`
-          },
-        },
       },
       plotOptions: {
         radar: {

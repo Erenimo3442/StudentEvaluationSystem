@@ -256,9 +256,9 @@ const InstructorDashboard = () => {
                     LO Scores
                   </button>
                   <button
-                    onClick={() => setActiveChart('pie')}
+                    onClick={() => setActiveChart('bar')}
                     className={`px-3 py-1.5 text-sm rounded-lg transition ${
-                      activeChart === 'pie'
+                      activeChart === 'bar'
                         ? 'bg-primary-600 text-white'
                         : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
                     }`}
@@ -313,34 +313,67 @@ const InstructorDashboard = () => {
                     height={320}
                     className="shadow-none border-0 p-0"
                   />
-                ) : (
+                ) : activeChart === 'bar' || activeChart === 'pie' ? (
                   <ChartWidget
-                    key={`donut-chart-${course.id}`}
+                    key={`bar-chart-${course.id}`}
                     title=""
-                    type="donut"
-                    series={(course.gradeDistribution || []).map(item => item.count)}
+                    type="bar"
+                    series={[{
+                      name: 'Students',
+                      data: (course.gradeDistribution || []).map(item => item.count)
+                    }]}
                     options={{
-                      labels: (course.gradeDistribution || []).map(item => item.grade),
-                      colors: (course.gradeDistribution || []).map(item => item.color),
-                      legend: {
-                        position: 'bottom'
-                      },
-                      dataLabels: {
-                        enabled: true,
-                        formatter: (val: number) => `${val.toFixed(0)}%`
+                      chart: {
+                        toolbar: { show: false }
                       },
                       plotOptions: {
-                        pie: {
-                          donut: {
-                            size: '60%'
+                        bar: {
+                          borderRadius: 6,
+                          horizontal: true,
+                          columnWidth: '50%',
+                          distributed: true,
+                        }
+                      },
+                      grid: {
+                        yaxis: {
+                          lines: { show: false }
+                        }
+                      },
+                      xaxis: {
+                        categories: (course.gradeDistribution || []).map(item => item.grade),
+                        labels: {
+                          style: {
+                            fontSize: '14px',
+                            fontWeight: 600
                           }
+                        }
+                      },
+                      yaxis: {
+                        labels: {
+                          style: {
+                            fontSize: '13px'
+                          }
+                        }
+                      },
+                      colors: (course.gradeDistribution || []).map(item => item.color),
+                      legend: { show: false },
+                      dataLabels: {
+                        enabled: true,
+                        style: {
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }
+                      },
+                      tooltip: {
+                        y: {
+                          formatter: (val: number) => `${val} student${val !== 1 ? 's' : ''}`
                         }
                       }
                     }}
                     height={320}
                     className="shadow-none border-0 p-0"
                   />
-                )}
+                ) : null}
               </div>
             </div>
 
