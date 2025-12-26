@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import { useMemo } from 'react'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
@@ -12,50 +13,95 @@ import {
   PlusIcon,
   Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
-import { coreService } from '../services/api'
-import { Course } from '../types/index'
+import {
+  coreCoursesList
+} from '../api/generated/core/core'
+import {
+  evaluationGradesCourseAveragesRetrieve
+} from '../api/generated/evaluation/evaluation'
+
+interface CourseStatsData {
+  courseId: number
+  studentCount: number
+  studentIds: number[]
+  average: number | null
+}
 
 const InstructorCourses = () => {
   const { user } = useAuth()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const userId = user?.id || undefined
-        const coursesRes = await coreService.getCourses(undefined, userId)
-        // Filter courses where current user is the lecturer
-        setCourses(coursesRes.data)
-      } catch (error) {
-        console.error('Error fetching courses:', error)
-        setCourses([])
-      } finally {
-        setLoading(false)
+  const { data: coursesData, isLoading: coursesLoading } = useQuery({
+    queryKey: ['instructor-courses', user?.id],
+    queryFn: async () => {
+      // instructor parameter is now typed in CoreCoursesListParams (from OpenAPI schema)
+      const response = await coreCoursesList({ instructor: user?.id })
+      return response.results || []
+    },
+    enabled: !!user?.id
+  })
+
+  // Combined query for both student counts and average scores using grade averages API
+  const courseStatsQueries = useQueries({
+    queries: (coursesData || []).map((course) => ({
+      queryKey: ['course-stats', course.id],
+      queryFn: async () => {
+        const response = await evaluationGradesCourseAveragesRetrieve({ course: course.id, per_student: true })
+        // response is an array of student grade averages with student_id
+        if (Array.isArray(response) && response.length > 0) {
+          const validAverages = response
+            .map(r => r.weighted_average)
+            .filter((avg): avg is number => avg !== null)
+          const courseAvg = validAverages.length > 0
+            ? validAverages.reduce((sum, avg) => sum + avg, 0) / validAverages.length
+            : null
+          // Extract student IDs from the response (each entry has student_id)
+          const studentIds = response
+            .map(r => (r as any).student_id)
+            .filter((id): id is number => id != null)
+
+          return {
+            courseId: course.id,
+            studentCount: studentIds.length,
+            studentIds,
+            average: courseAvg
+          } as CourseStatsData
+        }
+        return {
+          courseId: course.id,
+          studentCount: 0,
+          studentIds: [],
+          average: null
+        } as CourseStatsData
+      },
+      enabled: !!coursesData?.length
+    }))
+  })
+
+  // Calculate total UNIQUE students from all course stats
+  const totalStudents = useMemo(() => {
+    const allStudentIds = new Set<number>()
+    courseStatsQueries.forEach(query => {
+      if (query.data?.studentIds) {
+        query.data.studentIds.forEach((id: number) => allStudentIds.add(id))
       }
-    }
+    })
+    return allStudentIds.size
+  }, [courseStatsQueries])
 
-    fetchCourses()
-  }, [user])
+    const totalCredits = coursesData?.reduce((sum, course) => sum + (course.credits || 0), 0) || 0
 
-  const totalStudents = courses.reduce((sum, course) => {
-    // This would need to be fetched from the API
-    // For now, using a mock calculation
-    return sum + Math.floor(Math.random() * 50) + 20
-  }, 0)
+  const isLoadingData = coursesLoading || courseStatsQueries.some(q => q.isLoading)
 
-  const totalCredits = courses.reduce((sum, course) => sum + (course.credits || 0), 0)
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-secondary-600 font-medium">Loading your courses...</p>
-        </div>
+if (isLoadingData) {
+  return (
+    <div className="flex justify-center items-center min-h-96">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary-600 mx-auto"></div>
+        <p className="mt-4 text-secondary-600 font-medium">Loading your courses...</p>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   return (
     <div className="space-y-8">
@@ -82,7 +128,7 @@ const InstructorCourses = () => {
             </div>
             <div>
               <p className="text-sm text-secondary-600 font-medium">Active Courses</p>
-              <p className="text-3xl font-bold text-primary-700">{courses.length}</p>
+              <p className="text-3xl font-bold text-primary-700">{  coursesData?.length || 0}</p>
             </div>
           </div>
         </Card>
@@ -113,14 +159,16 @@ const InstructorCourses = () => {
       </div>
 
       {/* Courses Grid */}
-      {courses.length > 0 ? (
+      {coursesData && coursesData.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => {
-            const studentCount = Math.floor(Math.random() * 50) + 20 // Mock data
-            const avgScore = Math.floor(Math.random() * 30) + 70 // Mock data
-            
+          {coursesData.map((course, index) => {
+            // Get real data from combined query
+            const statsData = courseStatsQueries[index]?.data
+            const studentCount = statsData?.studentCount ?? 0
+            const avgScore = statsData?.average ? Math.round(statsData.average) : null
+
             return (
-              <Card key={course.id} variant="hover" className="group">
+              <Card key={course.id} variant="hover" className="group relative">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="h-12 w-12 rounded-xl bg-primary-600 flex items-center justify-center text-white font-bold shadow-lg">
@@ -140,19 +188,29 @@ const InstructorCourses = () => {
                     {course.credits} CR
                   </Badge>
                 </div>
-                
+
                 <h4 className="font-medium text-secondary-900 mb-3 line-clamp-2">
                   {course.name}
                 </h4>
-                
+
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Students</span>
-                    <span className="font-medium text-secondary-900">{studentCount}</span>
+                    {courseStatsQueries[index]?.isLoading ? (
+                      <span className="text-secondary-400 animate-pulse">Loading...</span>
+                    ) : (
+                      <span className="font-medium text-secondary-900">{studentCount}</span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Avg Score</span>
-                    <span className="font-medium text-secondary-900">{avgScore}%</span>
+                    {courseStatsQueries[index]?.isLoading ? (
+                      <span className="text-secondary-400 animate-pulse">Loading...</span>
+                    ) : avgScore !== null ? (
+                      <span className="font-medium text-secondary-900">{avgScore}</span>
+                    ) : (
+                      <span className="text-secondary-400">No data</span>
+                    )}
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-secondary-600">Credits</span>

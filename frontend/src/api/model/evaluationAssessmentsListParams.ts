@@ -8,7 +8,15 @@
 
 export type EvaluationAssessmentsListParams = {
 /**
+ * Filter assessments by course ID
+ */
+course?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;
+/**
+ * Filter assessments by type (midterm, final, homework, project, quiz, attendance, other)
+ */
+type?: string;
 };

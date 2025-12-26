@@ -8,7 +8,19 @@
 
 export type CoreCoursesListParams = {
 /**
+ * Filter courses by department ID
+ */
+department?: number;
+/**
+ * Filter courses by instructor ID
+ */
+instructor?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;
+/**
+ * Filter courses by term ID
+ */
+term?: number;
 };

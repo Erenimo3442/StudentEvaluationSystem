@@ -8,5 +8,4 @@
 
 export type CoreFileImportAssignmentScoresUploadCreateBody = {
   file: Blob;
-  sheet_name?: string;
 };

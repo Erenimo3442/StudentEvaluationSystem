@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react'
 import { fileImportService } from '../services/api'
+import { coreFileImportAssignmentScoresUploadCreate, coreFileImportAssignmentScoresValidateCreate }from '../api/generated/file-import-assessment-scores/file-import-assessment-scores'
+import { useQuery, useQueries } from '@tanstack/react-query'
 
 // Validation result types
 interface ValidationError {
@@ -146,7 +148,13 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       let result
       switch (type) {
         case 'assignment_scores':
-          result = await fileImportService.validateAssignmentScores(file, courseCode, termId)
+          result = await coreFileImportAssignmentScoresValidateCreate({
+            file: file,
+          }, 
+          {
+            course_code: courseCode,
+            term_id: termId
+          })
           break
         case 'learning_outcomes':
           result = await fileImportService.validateLearningOutcomes(file)
@@ -181,7 +189,13 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       let result
       switch (type) {
         case 'assignment_scores':
-          result = await fileImportService.uploadAssignmentScores(file, courseCode, termId)
+          result = await coreFileImportAssignmentScoresUploadCreate({
+            file: file,
+          },
+        {
+            course_code: courseCode,
+            term_id: termId
+        })
           break
         case 'learning_outcomes':
           result = await fileImportService.uploadLearningOutcomes(file)

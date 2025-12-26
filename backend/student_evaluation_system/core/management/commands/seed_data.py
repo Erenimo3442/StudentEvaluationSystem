@@ -120,15 +120,15 @@ class Command(BaseCommand):
 
     def create_university(self):
         university, _ = University.objects.get_or_create(
-            name='Sample University'
+            name='Acıbadem University'
         )
         self.stdout.write(f'  ✓ University: {university.name}')
         return university
 
     def create_department(self, university):
         department, _ = Department.objects.get_or_create(
-            name='Computer Science',
-            code='CS',
+            name='Computer Engineering',
+            code='CSE',
             university=university
         )
         self.stdout.write(f'  ✓ Department: {department.name}')
@@ -183,7 +183,7 @@ class Command(BaseCommand):
 
     def create_courses(self, program, term, instructor, count=6):
         course_names = [
-            'Artificial Intelligence', 'Algorithms 1', 'Data Systems',
+            'Artificial Intelligence', 'Algorithms I', 'Data Systems',
             'Operating Systems', 'Computer Networks', 'Microcontrollers'
         ]
         courses = []
@@ -250,11 +250,11 @@ class Command(BaseCommand):
                 )
 
     def create_assessments(self, course, count=4):
-        assessment_types = ['midterm', 'final', 'attendance', 'homeworks']
+        assessment_types = ['midterm', 'final', 'attendance', 'project']
         assessments = []
         
         # Weights must sum to 1.0
-        weights = [0.25, 0.35, 0.15, 0.25]  # Midterm, Final, Attendance, Homeworks
+        weights = [0.25, 0.35, 0.15, 0.25]  # Midterm, Final, Attendance, Project
         
         for i in range(count):
             assessment, _ = Assessment.objects.get_or_create(
@@ -262,7 +262,7 @@ class Command(BaseCommand):
                 course=course,
                 defaults={
                     'assessment_type': assessment_types[i],
-                    'date': f'2024-{10+i//4}-{1+(i%4)*7:02d}',
+                    'date': f'2025-{10+i//4}-{1+(i%4)*7:02d}',
                     'total_score': 100,
                     'weight': weights[i]
                 }
@@ -308,7 +308,7 @@ class Command(BaseCommand):
             profile, _ = StudentProfile.objects.get_or_create(
                 user=user,
                 defaults={
-                    'student_id': f'2024{i:05d}',
+                    'student_id': f'2025{i:05d}',
                     'program': program,
                     'enrollment_term': term,
                 }

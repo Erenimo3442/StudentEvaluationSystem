@@ -10,6 +10,7 @@ import type { CoreLearningOutcome } from './coreLearningOutcome';
 export interface StudentLearningOutcomeScore {
   readonly id: number;
   readonly student: string;
+  readonly student_id: number;
   readonly learning_outcome: CoreLearningOutcome;
   /** @minimum 0 */
   score?: number;

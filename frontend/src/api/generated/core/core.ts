@@ -9,18 +9,25 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery
-} from 'react-query';
+} from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
+  DefinedUseQueryResult,
+  InfiniteData,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseInfiniteQueryOptions,
   UseInfiniteQueryResult,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
   UseQueryResult
-} from 'react-query';
+} from '@tanstack/react-query';
 
 import type {
   CoreCoursesListParams,
@@ -30,8 +37,6 @@ import type {
   CoreLearningOutcomesListParams,
   CoreLoPoMappingsListParams,
   CoreProgramsListParams,
-  CoreStudentLoScoresListParams,
-  CoreStudentPoScoresListParams,
   CoreStudentsListParams,
   CoreTermsListParams,
   Course,
@@ -44,9 +49,7 @@ import type {
   PaginatedDepartmentList,
   PaginatedLearningOutcomeProgramOutcomeMappingList,
   PaginatedProgramList,
-  PaginatedStudentLearningOutcomeScoreList,
   PaginatedStudentProfileList,
-  PaginatedStudentProgramOutcomeScoreList,
   PaginatedTermList,
   PatchedCoreLearningOutcome,
   PatchedCourse,
@@ -56,9 +59,7 @@ import type {
   PatchedProgram,
   PatchedTerm,
   Program,
-  StudentLearningOutcomeScore,
   StudentProfile,
-  StudentProgramOutcomeScore,
   Term
 } from '../../model';
 
@@ -128,7 +129,7 @@ export const getCoreCoursesListQueryKey = (params?: CoreCoursesListParams,) => {
     }
 
     
-export const getCoreCoursesListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(params?: CoreCoursesListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreCoursesListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesList>>, CoreCoursesListParams['page']>, TError = unknown>(params?: CoreCoursesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData, QueryKey, CoreCoursesListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -137,28 +138,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreCoursesList>>> = ({ signal, pageParam }) => coreCoursesList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreCoursesList>>, QueryKey, CoreCoursesListParams['page']> = ({ signal, pageParam }) => coreCoursesList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData, QueryKey, CoreCoursesListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreCoursesListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreCoursesList>>>
 export type CoreCoursesListInfiniteQueryError = unknown
 
 
+export function useCoreCoursesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesList>>, CoreCoursesListParams['page']>, TError = unknown>(
+ params: undefined |  CoreCoursesListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData, QueryKey, CoreCoursesListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesList>>, CoreCoursesListParams['page']>, TError = unknown>(
+ params?: CoreCoursesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData, QueryKey, CoreCoursesListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesList>>, CoreCoursesListParams['page']>, TError = unknown>(
+ params?: CoreCoursesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData, QueryKey, CoreCoursesListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreCoursesListInfinite<TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(
- params?: CoreCoursesListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreCoursesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesList>>, CoreCoursesListParams['page']>, TError = unknown>(
+ params?: CoreCoursesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData, QueryKey, CoreCoursesListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreCoursesListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -167,7 +192,7 @@ export function useCoreCoursesListInfinite<TData = Awaited<ReturnType<typeof cor
 
 
 
-export const getCoreCoursesListQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(params?: CoreCoursesListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreCoursesListQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(params?: CoreCoursesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -182,22 +207,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreCoursesListQueryResult = NonNullable<Awaited<ReturnType<typeof coreCoursesList>>>
 export type CoreCoursesListQueryError = unknown
 
 
+export function useCoreCoursesList<TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(
+ params: undefined |  CoreCoursesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesList<TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(
+ params?: CoreCoursesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesList<TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(
+ params?: CoreCoursesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreCoursesList<TData = Awaited<ReturnType<typeof coreCoursesList>>, TError = unknown>(
- params?: CoreCoursesListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreCoursesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreCoursesListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -256,7 +305,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreCoursesCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreCoursesCreate>>, TError,{data: NonReadonly<Course>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreCoursesCreate>>,
         TError,
         {data: NonReadonly<Course>},
@@ -265,7 +314,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreCoursesCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for courses.
@@ -298,7 +347,7 @@ export const getCoreCoursesRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreCoursesRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreCoursesRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -313,22 +362,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreCoursesRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreCoursesRetrieve>>>
 export type CoreCoursesRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreCoursesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreCoursesRetrieveInfinite<TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreCoursesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreCoursesRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -337,7 +410,7 @@ export function useCoreCoursesRetrieveInfinite<TData = Awaited<ReturnType<typeof
 
 
 
-export const getCoreCoursesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreCoursesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -352,22 +425,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreCoursesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreCoursesRetrieve>>>
 export type CoreCoursesRetrieveQueryError = unknown
 
 
+export function useCoreCoursesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreCoursesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreCoursesRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -426,7 +523,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreCoursesUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreCoursesUpdate>>, TError,{id: number;data: NonReadonly<Course>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreCoursesUpdate>>,
         TError,
         {id: number;data: NonReadonly<Course>},
@@ -435,7 +532,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreCoursesUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for courses.
@@ -487,7 +584,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreCoursesPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreCoursesPartialUpdate>>, TError,{id: number;data: NonReadonly<PatchedCourse>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreCoursesPartialUpdate>>,
         TError,
         {id: number;data: NonReadonly<PatchedCourse>},
@@ -496,7 +593,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreCoursesPartialUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for courses.
@@ -545,7 +642,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreCoursesDestroy = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreCoursesDestroy>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreCoursesDestroy>>,
         TError,
         {id: number},
@@ -554,7 +651,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreCoursesDestroyMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * Get all learning outcomes for this course.
@@ -587,7 +684,7 @@ export const getCoreCoursesLearningOutcomesRetrieveQueryKey = (id?: number,) => 
     }
 
     
-export const getCoreCoursesLearningOutcomesRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreCoursesLearningOutcomesRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -602,22 +699,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreCoursesLearningOutcomesRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>>
 export type CoreCoursesLearningOutcomesRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreCoursesLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreCoursesLearningOutcomesRetrieveInfinite<TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreCoursesLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreCoursesLearningOutcomesRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -626,7 +747,7 @@ export function useCoreCoursesLearningOutcomesRetrieveInfinite<TData = Awaited<R
 
 
 
-export const getCoreCoursesLearningOutcomesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreCoursesLearningOutcomesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -641,22 +762,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreCoursesLearningOutcomesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>>
 export type CoreCoursesLearningOutcomesRetrieveQueryError = unknown
 
 
+export function useCoreCoursesLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreCoursesLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreCoursesLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreCoursesLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreCoursesLearningOutcomesRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -697,7 +842,7 @@ export const getCoreDegreeLevelsListQueryKey = (params?: CoreDegreeLevelsListPar
     }
 
     
-export const getCoreDegreeLevelsListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(params?: CoreDegreeLevelsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDegreeLevelsListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsList>>, CoreDegreeLevelsListParams['page']>, TError = unknown>(params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData, QueryKey, CoreDegreeLevelsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -706,28 +851,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreDegreeLevelsList>>> = ({ signal, pageParam }) => coreDegreeLevelsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreDegreeLevelsList>>, QueryKey, CoreDegreeLevelsListParams['page']> = ({ signal, pageParam }) => coreDegreeLevelsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData, QueryKey, CoreDegreeLevelsListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDegreeLevelsListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreDegreeLevelsList>>>
 export type CoreDegreeLevelsListInfiniteQueryError = unknown
 
 
+export function useCoreDegreeLevelsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsList>>, CoreDegreeLevelsListParams['page']>, TError = unknown>(
+ params: undefined |  CoreDegreeLevelsListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData, QueryKey, CoreDegreeLevelsListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsList>>, CoreDegreeLevelsListParams['page']>, TError = unknown>(
+ params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData, QueryKey, CoreDegreeLevelsListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsList>>, CoreDegreeLevelsListParams['page']>, TError = unknown>(
+ params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData, QueryKey, CoreDegreeLevelsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreDegreeLevelsListInfinite<TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(
- params?: CoreDegreeLevelsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreDegreeLevelsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsList>>, CoreDegreeLevelsListParams['page']>, TError = unknown>(
+ params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData, QueryKey, CoreDegreeLevelsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDegreeLevelsListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -736,7 +905,7 @@ export function useCoreDegreeLevelsListInfinite<TData = Awaited<ReturnType<typeo
 
 
 
-export const getCoreDegreeLevelsListQueryOptions = <TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(params?: CoreDegreeLevelsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDegreeLevelsListQueryOptions = <TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -751,22 +920,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDegreeLevelsListQueryResult = NonNullable<Awaited<ReturnType<typeof coreDegreeLevelsList>>>
 export type CoreDegreeLevelsListQueryError = unknown
 
 
+export function useCoreDegreeLevelsList<TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(
+ params: undefined |  CoreDegreeLevelsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsList<TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(
+ params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsList<TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(
+ params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreDegreeLevelsList<TData = Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError = unknown>(
- params?: CoreDegreeLevelsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreDegreeLevelsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDegreeLevelsListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -825,7 +1018,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDegreeLevelsCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDegreeLevelsCreate>>, TError,{data: NonReadonly<DegreeLevel>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDegreeLevelsCreate>>,
         TError,
         {data: NonReadonly<DegreeLevel>},
@@ -834,7 +1027,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDegreeLevelsCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for degree levels.
@@ -867,7 +1060,7 @@ export const getCoreDegreeLevelsRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreDegreeLevelsRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDegreeLevelsRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -882,22 +1075,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDegreeLevelsRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>>
 export type CoreDegreeLevelsRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreDegreeLevelsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreDegreeLevelsRetrieveInfinite<TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreDegreeLevelsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDegreeLevelsRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -906,7 +1123,7 @@ export function useCoreDegreeLevelsRetrieveInfinite<TData = Awaited<ReturnType<t
 
 
 
-export const getCoreDegreeLevelsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDegreeLevelsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -921,22 +1138,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDegreeLevelsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>>
 export type CoreDegreeLevelsRetrieveQueryError = unknown
 
 
+export function useCoreDegreeLevelsRetrieve<TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsRetrieve<TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDegreeLevelsRetrieve<TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreDegreeLevelsRetrieve<TData = Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDegreeLevelsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDegreeLevelsRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -995,7 +1236,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDegreeLevelsUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDegreeLevelsUpdate>>, TError,{id: number;data: NonReadonly<DegreeLevel>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDegreeLevelsUpdate>>,
         TError,
         {id: number;data: NonReadonly<DegreeLevel>},
@@ -1004,7 +1245,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDegreeLevelsUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for degree levels.
@@ -1056,7 +1297,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDegreeLevelsPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDegreeLevelsPartialUpdate>>, TError,{id: number;data: NonReadonly<PatchedDegreeLevel>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDegreeLevelsPartialUpdate>>,
         TError,
         {id: number;data: NonReadonly<PatchedDegreeLevel>},
@@ -1065,7 +1306,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDegreeLevelsPartialUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for degree levels.
@@ -1114,7 +1355,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDegreeLevelsDestroy = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDegreeLevelsDestroy>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDegreeLevelsDestroy>>,
         TError,
         {id: number},
@@ -1123,7 +1364,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDegreeLevelsDestroyMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for departments.
@@ -1157,7 +1398,7 @@ export const getCoreDepartmentsListQueryKey = (params?: CoreDepartmentsListParam
     }
 
     
-export const getCoreDepartmentsListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(params?: CoreDepartmentsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDepartmentsListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsList>>, CoreDepartmentsListParams['page']>, TError = unknown>(params?: CoreDepartmentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData, QueryKey, CoreDepartmentsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1166,28 +1407,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreDepartmentsList>>> = ({ signal, pageParam }) => coreDepartmentsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreDepartmentsList>>, QueryKey, CoreDepartmentsListParams['page']> = ({ signal, pageParam }) => coreDepartmentsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData, QueryKey, CoreDepartmentsListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDepartmentsListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreDepartmentsList>>>
 export type CoreDepartmentsListInfiniteQueryError = unknown
 
 
+export function useCoreDepartmentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsList>>, CoreDepartmentsListParams['page']>, TError = unknown>(
+ params: undefined |  CoreDepartmentsListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData, QueryKey, CoreDepartmentsListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsList>>, CoreDepartmentsListParams['page']>, TError = unknown>(
+ params?: CoreDepartmentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData, QueryKey, CoreDepartmentsListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsList>>, CoreDepartmentsListParams['page']>, TError = unknown>(
+ params?: CoreDepartmentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData, QueryKey, CoreDepartmentsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreDepartmentsListInfinite<TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(
- params?: CoreDepartmentsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreDepartmentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsList>>, CoreDepartmentsListParams['page']>, TError = unknown>(
+ params?: CoreDepartmentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData, QueryKey, CoreDepartmentsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDepartmentsListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1196,7 +1461,7 @@ export function useCoreDepartmentsListInfinite<TData = Awaited<ReturnType<typeof
 
 
 
-export const getCoreDepartmentsListQueryOptions = <TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(params?: CoreDepartmentsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDepartmentsListQueryOptions = <TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(params?: CoreDepartmentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1211,22 +1476,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDepartmentsListQueryResult = NonNullable<Awaited<ReturnType<typeof coreDepartmentsList>>>
 export type CoreDepartmentsListQueryError = unknown
 
 
+export function useCoreDepartmentsList<TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(
+ params: undefined |  CoreDepartmentsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsList<TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(
+ params?: CoreDepartmentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsList<TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(
+ params?: CoreDepartmentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreDepartmentsList<TData = Awaited<ReturnType<typeof coreDepartmentsList>>, TError = unknown>(
- params?: CoreDepartmentsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreDepartmentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDepartmentsListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1285,7 +1574,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDepartmentsCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDepartmentsCreate>>, TError,{data: NonReadonly<Department>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDepartmentsCreate>>,
         TError,
         {data: NonReadonly<Department>},
@@ -1294,7 +1583,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDepartmentsCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for departments.
@@ -1327,7 +1616,7 @@ export const getCoreDepartmentsRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreDepartmentsRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDepartmentsRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1342,22 +1631,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDepartmentsRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>>
 export type CoreDepartmentsRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreDepartmentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreDepartmentsRetrieveInfinite<TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreDepartmentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDepartmentsRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1366,7 +1679,7 @@ export function useCoreDepartmentsRetrieveInfinite<TData = Awaited<ReturnType<ty
 
 
 
-export const getCoreDepartmentsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreDepartmentsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1381,22 +1694,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreDepartmentsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>>
 export type CoreDepartmentsRetrieveQueryError = unknown
 
 
+export function useCoreDepartmentsRetrieve<TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsRetrieve<TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreDepartmentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreDepartmentsRetrieve<TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreDepartmentsRetrieve<TData = Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreDepartmentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreDepartmentsRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1455,7 +1792,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDepartmentsUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDepartmentsUpdate>>, TError,{id: number;data: NonReadonly<Department>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDepartmentsUpdate>>,
         TError,
         {id: number;data: NonReadonly<Department>},
@@ -1464,7 +1801,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDepartmentsUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for departments.
@@ -1516,7 +1853,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDepartmentsPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDepartmentsPartialUpdate>>, TError,{id: number;data: NonReadonly<PatchedDepartment>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDepartmentsPartialUpdate>>,
         TError,
         {id: number;data: NonReadonly<PatchedDepartment>},
@@ -1525,7 +1862,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDepartmentsPartialUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for departments.
@@ -1574,7 +1911,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreDepartmentsDestroy = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreDepartmentsDestroy>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreDepartmentsDestroy>>,
         TError,
         {id: number},
@@ -1583,7 +1920,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreDepartmentsDestroyMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for learning outcomes.
@@ -1617,7 +1954,7 @@ export const getCoreLearningOutcomesListQueryKey = (params?: CoreLearningOutcome
     }
 
     
-export const getCoreLearningOutcomesListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(params?: CoreLearningOutcomesListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLearningOutcomesListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesList>>, CoreLearningOutcomesListParams['page']>, TError = unknown>(params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData, QueryKey, CoreLearningOutcomesListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1626,28 +1963,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreLearningOutcomesList>>> = ({ signal, pageParam }) => coreLearningOutcomesList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreLearningOutcomesList>>, QueryKey, CoreLearningOutcomesListParams['page']> = ({ signal, pageParam }) => coreLearningOutcomesList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData, QueryKey, CoreLearningOutcomesListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLearningOutcomesListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreLearningOutcomesList>>>
 export type CoreLearningOutcomesListInfiniteQueryError = unknown
 
 
+export function useCoreLearningOutcomesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesList>>, CoreLearningOutcomesListParams['page']>, TError = unknown>(
+ params: undefined |  CoreLearningOutcomesListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData, QueryKey, CoreLearningOutcomesListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesList>>, CoreLearningOutcomesListParams['page']>, TError = unknown>(
+ params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData, QueryKey, CoreLearningOutcomesListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesList>>, CoreLearningOutcomesListParams['page']>, TError = unknown>(
+ params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData, QueryKey, CoreLearningOutcomesListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreLearningOutcomesListInfinite<TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(
- params?: CoreLearningOutcomesListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreLearningOutcomesListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesList>>, CoreLearningOutcomesListParams['page']>, TError = unknown>(
+ params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData, QueryKey, CoreLearningOutcomesListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLearningOutcomesListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1656,7 +2017,7 @@ export function useCoreLearningOutcomesListInfinite<TData = Awaited<ReturnType<t
 
 
 
-export const getCoreLearningOutcomesListQueryOptions = <TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(params?: CoreLearningOutcomesListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLearningOutcomesListQueryOptions = <TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1671,22 +2032,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLearningOutcomesListQueryResult = NonNullable<Awaited<ReturnType<typeof coreLearningOutcomesList>>>
 export type CoreLearningOutcomesListQueryError = unknown
 
 
+export function useCoreLearningOutcomesList<TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(
+ params: undefined |  CoreLearningOutcomesListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesList<TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(
+ params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesList<TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(
+ params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreLearningOutcomesList<TData = Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError = unknown>(
- params?: CoreLearningOutcomesListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreLearningOutcomesListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLearningOutcomesListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1745,7 +2130,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLearningOutcomesCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLearningOutcomesCreate>>, TError,{data: NonReadonly<CoreLearningOutcome>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLearningOutcomesCreate>>,
         TError,
         {data: NonReadonly<CoreLearningOutcome>},
@@ -1754,7 +2139,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLearningOutcomesCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for learning outcomes.
@@ -1787,7 +2172,7 @@ export const getCoreLearningOutcomesRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreLearningOutcomesRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLearningOutcomesRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1802,22 +2187,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLearningOutcomesRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>>
 export type CoreLearningOutcomesRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreLearningOutcomesRetrieveInfinite<TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreLearningOutcomesRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLearningOutcomesRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1826,7 +2235,7 @@ export function useCoreLearningOutcomesRetrieveInfinite<TData = Awaited<ReturnTy
 
 
 
-export const getCoreLearningOutcomesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLearningOutcomesRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1841,22 +2250,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLearningOutcomesRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>>
 export type CoreLearningOutcomesRetrieveQueryError = unknown
 
 
+export function useCoreLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreLearningOutcomesRetrieve<TData = Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLearningOutcomesRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLearningOutcomesRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -1915,7 +2348,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLearningOutcomesUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLearningOutcomesUpdate>>, TError,{id: number;data: NonReadonly<CoreLearningOutcome>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLearningOutcomesUpdate>>,
         TError,
         {id: number;data: NonReadonly<CoreLearningOutcome>},
@@ -1924,7 +2357,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLearningOutcomesUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for learning outcomes.
@@ -1976,7 +2409,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLearningOutcomesPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLearningOutcomesPartialUpdate>>, TError,{id: number;data: NonReadonly<PatchedCoreLearningOutcome>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLearningOutcomesPartialUpdate>>,
         TError,
         {id: number;data: NonReadonly<PatchedCoreLearningOutcome>},
@@ -1985,7 +2418,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLearningOutcomesPartialUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for learning outcomes.
@@ -2034,7 +2467,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLearningOutcomesDestroy = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLearningOutcomesDestroy>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLearningOutcomesDestroy>>,
         TError,
         {id: number},
@@ -2043,7 +2476,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLearningOutcomesDestroyMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for LO-PO mappings.
@@ -2077,7 +2510,7 @@ export const getCoreLoPoMappingsListQueryKey = (params?: CoreLoPoMappingsListPar
     }
 
     
-export const getCoreLoPoMappingsListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(params?: CoreLoPoMappingsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLoPoMappingsListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsList>>, CoreLoPoMappingsListParams['page']>, TError = unknown>(params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData, QueryKey, CoreLoPoMappingsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2086,28 +2519,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreLoPoMappingsList>>> = ({ signal, pageParam }) => coreLoPoMappingsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreLoPoMappingsList>>, QueryKey, CoreLoPoMappingsListParams['page']> = ({ signal, pageParam }) => coreLoPoMappingsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData, QueryKey, CoreLoPoMappingsListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLoPoMappingsListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreLoPoMappingsList>>>
 export type CoreLoPoMappingsListInfiniteQueryError = unknown
 
 
+export function useCoreLoPoMappingsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsList>>, CoreLoPoMappingsListParams['page']>, TError = unknown>(
+ params: undefined |  CoreLoPoMappingsListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData, QueryKey, CoreLoPoMappingsListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsList>>, CoreLoPoMappingsListParams['page']>, TError = unknown>(
+ params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData, QueryKey, CoreLoPoMappingsListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsList>>, CoreLoPoMappingsListParams['page']>, TError = unknown>(
+ params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData, QueryKey, CoreLoPoMappingsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreLoPoMappingsListInfinite<TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(
- params?: CoreLoPoMappingsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreLoPoMappingsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsList>>, CoreLoPoMappingsListParams['page']>, TError = unknown>(
+ params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData, QueryKey, CoreLoPoMappingsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLoPoMappingsListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2116,7 +2573,7 @@ export function useCoreLoPoMappingsListInfinite<TData = Awaited<ReturnType<typeo
 
 
 
-export const getCoreLoPoMappingsListQueryOptions = <TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(params?: CoreLoPoMappingsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLoPoMappingsListQueryOptions = <TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2131,22 +2588,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLoPoMappingsListQueryResult = NonNullable<Awaited<ReturnType<typeof coreLoPoMappingsList>>>
 export type CoreLoPoMappingsListQueryError = unknown
 
 
+export function useCoreLoPoMappingsList<TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(
+ params: undefined |  CoreLoPoMappingsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsList<TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(
+ params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsList<TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(
+ params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreLoPoMappingsList<TData = Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError = unknown>(
- params?: CoreLoPoMappingsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreLoPoMappingsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLoPoMappingsListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2205,7 +2686,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLoPoMappingsCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLoPoMappingsCreate>>, TError,{data: NonReadonly<LearningOutcomeProgramOutcomeMapping>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLoPoMappingsCreate>>,
         TError,
         {data: NonReadonly<LearningOutcomeProgramOutcomeMapping>},
@@ -2214,7 +2695,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLoPoMappingsCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for LO-PO mappings.
@@ -2247,7 +2728,7 @@ export const getCoreLoPoMappingsRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreLoPoMappingsRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLoPoMappingsRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2262,22 +2743,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLoPoMappingsRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>>
 export type CoreLoPoMappingsRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreLoPoMappingsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreLoPoMappingsRetrieveInfinite<TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreLoPoMappingsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLoPoMappingsRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2286,7 +2791,7 @@ export function useCoreLoPoMappingsRetrieveInfinite<TData = Awaited<ReturnType<t
 
 
 
-export const getCoreLoPoMappingsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreLoPoMappingsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2301,22 +2806,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreLoPoMappingsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>>
 export type CoreLoPoMappingsRetrieveQueryError = unknown
 
 
+export function useCoreLoPoMappingsRetrieve<TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsRetrieve<TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreLoPoMappingsRetrieve<TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreLoPoMappingsRetrieve<TData = Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreLoPoMappingsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreLoPoMappingsRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2375,7 +2904,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLoPoMappingsUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLoPoMappingsUpdate>>, TError,{id: number;data: NonReadonly<LearningOutcomeProgramOutcomeMapping>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLoPoMappingsUpdate>>,
         TError,
         {id: number;data: NonReadonly<LearningOutcomeProgramOutcomeMapping>},
@@ -2384,7 +2913,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLoPoMappingsUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for LO-PO mappings.
@@ -2436,7 +2965,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLoPoMappingsPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLoPoMappingsPartialUpdate>>, TError,{id: number;data: NonReadonly<PatchedLearningOutcomeProgramOutcomeMapping>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLoPoMappingsPartialUpdate>>,
         TError,
         {id: number;data: NonReadonly<PatchedLearningOutcomeProgramOutcomeMapping>},
@@ -2445,7 +2974,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLoPoMappingsPartialUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for LO-PO mappings.
@@ -2494,7 +3023,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreLoPoMappingsDestroy = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreLoPoMappingsDestroy>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreLoPoMappingsDestroy>>,
         TError,
         {id: number},
@@ -2503,7 +3032,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreLoPoMappingsDestroyMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for programs.
@@ -2537,7 +3066,7 @@ export const getCoreProgramsListQueryKey = (params?: CoreProgramsListParams,) =>
     }
 
     
-export const getCoreProgramsListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(params?: CoreProgramsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreProgramsListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsList>>, CoreProgramsListParams['page']>, TError = unknown>(params?: CoreProgramsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData, QueryKey, CoreProgramsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2546,28 +3075,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreProgramsList>>> = ({ signal, pageParam }) => coreProgramsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreProgramsList>>, QueryKey, CoreProgramsListParams['page']> = ({ signal, pageParam }) => coreProgramsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData, QueryKey, CoreProgramsListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreProgramsListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreProgramsList>>>
 export type CoreProgramsListInfiniteQueryError = unknown
 
 
+export function useCoreProgramsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsList>>, CoreProgramsListParams['page']>, TError = unknown>(
+ params: undefined |  CoreProgramsListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData, QueryKey, CoreProgramsListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsList>>, CoreProgramsListParams['page']>, TError = unknown>(
+ params?: CoreProgramsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData, QueryKey, CoreProgramsListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsList>>, CoreProgramsListParams['page']>, TError = unknown>(
+ params?: CoreProgramsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData, QueryKey, CoreProgramsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreProgramsListInfinite<TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(
- params?: CoreProgramsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreProgramsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsList>>, CoreProgramsListParams['page']>, TError = unknown>(
+ params?: CoreProgramsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData, QueryKey, CoreProgramsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreProgramsListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2576,7 +3129,7 @@ export function useCoreProgramsListInfinite<TData = Awaited<ReturnType<typeof co
 
 
 
-export const getCoreProgramsListQueryOptions = <TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(params?: CoreProgramsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreProgramsListQueryOptions = <TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(params?: CoreProgramsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2591,22 +3144,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreProgramsListQueryResult = NonNullable<Awaited<ReturnType<typeof coreProgramsList>>>
 export type CoreProgramsListQueryError = unknown
 
 
+export function useCoreProgramsList<TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(
+ params: undefined |  CoreProgramsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsList<TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(
+ params?: CoreProgramsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsList<TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(
+ params?: CoreProgramsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreProgramsList<TData = Awaited<ReturnType<typeof coreProgramsList>>, TError = unknown>(
- params?: CoreProgramsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreProgramsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreProgramsListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2665,7 +3242,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreProgramsCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreProgramsCreate>>, TError,{data: NonReadonly<Program>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreProgramsCreate>>,
         TError,
         {data: NonReadonly<Program>},
@@ -2674,7 +3251,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreProgramsCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for programs.
@@ -2707,7 +3284,7 @@ export const getCoreProgramsRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreProgramsRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreProgramsRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2722,22 +3299,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreProgramsRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreProgramsRetrieve>>>
 export type CoreProgramsRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreProgramsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreProgramsRetrieveInfinite<TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreProgramsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreProgramsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreProgramsRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2746,7 +3347,7 @@ export function useCoreProgramsRetrieveInfinite<TData = Awaited<ReturnType<typeo
 
 
 
-export const getCoreProgramsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreProgramsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2761,22 +3362,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreProgramsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreProgramsRetrieve>>>
 export type CoreProgramsRetrieveQueryError = unknown
 
 
+export function useCoreProgramsRetrieve<TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsRetrieve<TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreProgramsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreProgramsRetrieve<TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreProgramsRetrieve<TData = Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreProgramsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreProgramsRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -2835,7 +3460,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreProgramsUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreProgramsUpdate>>, TError,{id: number;data: NonReadonly<Program>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreProgramsUpdate>>,
         TError,
         {id: number;data: NonReadonly<Program>},
@@ -2844,7 +3469,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreProgramsUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for programs.
@@ -2896,7 +3521,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreProgramsPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreProgramsPartialUpdate>>, TError,{id: number;data: NonReadonly<PatchedProgram>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreProgramsPartialUpdate>>,
         TError,
         {id: number;data: NonReadonly<PatchedProgram>},
@@ -2905,7 +3530,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreProgramsPartialUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for programs.
@@ -2954,7 +3579,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreProgramsDestroy = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreProgramsDestroy>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreProgramsDestroy>>,
         TError,
         {id: number},
@@ -2963,447 +3588,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreProgramsDestroyMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
-    /**
- * Read-only access to calculated LO scores.
- */
-export const coreStudentLoScoresList = (
-    params?: CoreStudentLoScoresListParams,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<PaginatedStudentLearningOutcomeScoreList>(
-      {url: `/api/core/student-lo-scores/`, method: 'GET',
-        params, signal
-    },
-      options);
-    }
-  
-
-
-
-export const getCoreStudentLoScoresListInfiniteQueryKey = (params?: CoreStudentLoScoresListParams,) => {
-    return [
-    'infinate', `/api/core/student-lo-scores/`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-export const getCoreStudentLoScoresListQueryKey = (params?: CoreStudentLoScoresListParams,) => {
-    return [
-    `/api/core/student-lo-scores/`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-    
-export const getCoreStudentLoScoresListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError = unknown>(params?: CoreStudentLoScoresListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentLoScoresListInfiniteQueryKey(params);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentLoScoresList>>> = ({ signal, pageParam }) => coreStudentLoScoresList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentLoScoresListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentLoScoresList>>>
-export type CoreStudentLoScoresListInfiniteQueryError = unknown
-
-
-
-export function useCoreStudentLoScoresListInfinite<TData = Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError = unknown>(
- params?: CoreStudentLoScoresListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentLoScoresListInfiniteQueryOptions(params,options)
-
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-export const getCoreStudentLoScoresListQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError = unknown>(params?: CoreStudentLoScoresListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentLoScoresListQueryKey(params);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentLoScoresList>>> = ({ signal }) => coreStudentLoScoresList(params, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentLoScoresListQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentLoScoresList>>>
-export type CoreStudentLoScoresListQueryError = unknown
-
-
-
-export function useCoreStudentLoScoresList<TData = Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError = unknown>(
- params?: CoreStudentLoScoresListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentLoScoresListQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-/**
- * Read-only access to calculated LO scores.
- */
-export const coreStudentLoScoresRetrieve = (
-    id: number,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<StudentLearningOutcomeScore>(
-      {url: `/api/core/student-lo-scores/${id}/`, method: 'GET', signal
-    },
-      options);
-    }
-  
-
-
-
-export const getCoreStudentLoScoresRetrieveInfiniteQueryKey = (id?: number,) => {
-    return [
-    'infinate', `/api/core/student-lo-scores/${id}/`
-    ] as const;
-    }
-
-export const getCoreStudentLoScoresRetrieveQueryKey = (id?: number,) => {
-    return [
-    `/api/core/student-lo-scores/${id}/`
-    ] as const;
-    }
-
-    
-export const getCoreStudentLoScoresRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentLoScoresRetrieveInfiniteQueryKey(id);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>> = ({ signal }) => coreStudentLoScoresRetrieve(id, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentLoScoresRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>>
-export type CoreStudentLoScoresRetrieveInfiniteQueryError = unknown
-
-
-
-export function useCoreStudentLoScoresRetrieveInfinite<TData = Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentLoScoresRetrieveInfiniteQueryOptions(id,options)
-
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-export const getCoreStudentLoScoresRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentLoScoresRetrieveQueryKey(id);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>> = ({ signal }) => coreStudentLoScoresRetrieve(id, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentLoScoresRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>>
-export type CoreStudentLoScoresRetrieveQueryError = unknown
-
-
-
-export function useCoreStudentLoScoresRetrieve<TData = Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentLoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentLoScoresRetrieveQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-/**
- * Read-only access to calculated PO scores.
- */
-export const coreStudentPoScoresList = (
-    params?: CoreStudentPoScoresListParams,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<PaginatedStudentProgramOutcomeScoreList>(
-      {url: `/api/core/student-po-scores/`, method: 'GET',
-        params, signal
-    },
-      options);
-    }
-  
-
-
-
-export const getCoreStudentPoScoresListInfiniteQueryKey = (params?: CoreStudentPoScoresListParams,) => {
-    return [
-    'infinate', `/api/core/student-po-scores/`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-export const getCoreStudentPoScoresListQueryKey = (params?: CoreStudentPoScoresListParams,) => {
-    return [
-    `/api/core/student-po-scores/`, ...(params ? [params]: [])
-    ] as const;
-    }
-
-    
-export const getCoreStudentPoScoresListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError = unknown>(params?: CoreStudentPoScoresListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentPoScoresListInfiniteQueryKey(params);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentPoScoresList>>> = ({ signal, pageParam }) => coreStudentPoScoresList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentPoScoresListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentPoScoresList>>>
-export type CoreStudentPoScoresListInfiniteQueryError = unknown
-
-
-
-export function useCoreStudentPoScoresListInfinite<TData = Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError = unknown>(
- params?: CoreStudentPoScoresListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentPoScoresListInfiniteQueryOptions(params,options)
-
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-export const getCoreStudentPoScoresListQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError = unknown>(params?: CoreStudentPoScoresListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentPoScoresListQueryKey(params);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentPoScoresList>>> = ({ signal }) => coreStudentPoScoresList(params, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentPoScoresListQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentPoScoresList>>>
-export type CoreStudentPoScoresListQueryError = unknown
-
-
-
-export function useCoreStudentPoScoresList<TData = Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError = unknown>(
- params?: CoreStudentPoScoresListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentPoScoresListQueryOptions(params,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-/**
- * Read-only access to calculated PO scores.
- */
-export const coreStudentPoScoresRetrieve = (
-    id: number,
- options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
-) => {
-      
-      
-      return customInstance<StudentProgramOutcomeScore>(
-      {url: `/api/core/student-po-scores/${id}/`, method: 'GET', signal
-    },
-      options);
-    }
-  
-
-
-
-export const getCoreStudentPoScoresRetrieveInfiniteQueryKey = (id?: number,) => {
-    return [
-    'infinate', `/api/core/student-po-scores/${id}/`
-    ] as const;
-    }
-
-export const getCoreStudentPoScoresRetrieveQueryKey = (id?: number,) => {
-    return [
-    `/api/core/student-po-scores/${id}/`
-    ] as const;
-    }
-
-    
-export const getCoreStudentPoScoresRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentPoScoresRetrieveInfiniteQueryKey(id);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>> = ({ signal }) => coreStudentPoScoresRetrieve(id, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentPoScoresRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>>
-export type CoreStudentPoScoresRetrieveInfiniteQueryError = unknown
-
-
-
-export function useCoreStudentPoScoresRetrieveInfinite<TData = Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentPoScoresRetrieveInfiniteQueryOptions(id,options)
-
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-export const getCoreStudentPoScoresRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getCoreStudentPoScoresRetrieveQueryKey(id);
-
-  
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>> = ({ signal }) => coreStudentPoScoresRetrieve(id, requestOptions, signal);
-
-      
-
-      
-
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CoreStudentPoScoresRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>>
-export type CoreStudentPoScoresRetrieveQueryError = unknown
-
-
-
-export function useCoreStudentPoScoresRetrieve<TData = Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentPoScoresRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getCoreStudentPoScoresRetrieveQueryOptions(id,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey ;
-
-  return query;
-}
-
-
-
-export const coreStudentsList = (
+    export const coreStudentsList = (
     params?: CoreStudentsListParams,
  options?: SecondParameter<typeof customInstance>,signal?: AbortSignal
 ) => {
@@ -3432,7 +3619,7 @@ export const getCoreStudentsListQueryKey = (params?: CoreStudentsListParams,) =>
     }
 
     
-export const getCoreStudentsListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(params?: CoreStudentsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreStudentsListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsList>>, CoreStudentsListParams['page']>, TError = unknown>(params?: CoreStudentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData, QueryKey, CoreStudentsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3441,28 +3628,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentsList>>> = ({ signal, pageParam }) => coreStudentsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreStudentsList>>, QueryKey, CoreStudentsListParams['page']> = ({ signal, pageParam }) => coreStudentsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData, QueryKey, CoreStudentsListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreStudentsListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentsList>>>
 export type CoreStudentsListInfiniteQueryError = unknown
 
 
+export function useCoreStudentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsList>>, CoreStudentsListParams['page']>, TError = unknown>(
+ params: undefined |  CoreStudentsListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData, QueryKey, CoreStudentsListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsList>>, CoreStudentsListParams['page']>, TError = unknown>(
+ params?: CoreStudentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData, QueryKey, CoreStudentsListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsList>>, CoreStudentsListParams['page']>, TError = unknown>(
+ params?: CoreStudentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData, QueryKey, CoreStudentsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreStudentsListInfinite<TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(
- params?: CoreStudentsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreStudentsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsList>>, CoreStudentsListParams['page']>, TError = unknown>(
+ params?: CoreStudentsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData, QueryKey, CoreStudentsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreStudentsListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3471,7 +3682,7 @@ export function useCoreStudentsListInfinite<TData = Awaited<ReturnType<typeof co
 
 
 
-export const getCoreStudentsListQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(params?: CoreStudentsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreStudentsListQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(params?: CoreStudentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3486,22 +3697,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreStudentsListQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentsList>>>
 export type CoreStudentsListQueryError = unknown
 
 
+export function useCoreStudentsList<TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(
+ params: undefined |  CoreStudentsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsList<TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(
+ params?: CoreStudentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsList<TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(
+ params?: CoreStudentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreStudentsList<TData = Awaited<ReturnType<typeof coreStudentsList>>, TError = unknown>(
- params?: CoreStudentsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreStudentsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreStudentsListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3538,7 +3773,7 @@ export const getCoreStudentsRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreStudentsRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreStudentsRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3553,22 +3788,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreStudentsRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentsRetrieve>>>
 export type CoreStudentsRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreStudentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreStudentsRetrieveInfinite<TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreStudentsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreStudentsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreStudentsRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3577,7 +3836,7 @@ export function useCoreStudentsRetrieveInfinite<TData = Awaited<ReturnType<typeo
 
 
 
-export const getCoreStudentsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreStudentsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3592,22 +3851,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreStudentsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreStudentsRetrieve>>>
 export type CoreStudentsRetrieveQueryError = unknown
 
 
+export function useCoreStudentsRetrieve<TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsRetrieve<TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreStudentsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreStudentsRetrieve<TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreStudentsRetrieve<TData = Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreStudentsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreStudentsRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3648,7 +3931,7 @@ export const getCoreTermsListQueryKey = (params?: CoreTermsListParams,) => {
     }
 
     
-export const getCoreTermsListInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(params?: CoreTermsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreTermsListInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreTermsList>>, CoreTermsListParams['page']>, TError = unknown>(params?: CoreTermsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData, QueryKey, CoreTermsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3657,28 +3940,52 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
   
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreTermsList>>> = ({ signal, pageParam }) => coreTermsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof coreTermsList>>, QueryKey, CoreTermsListParams['page']> = ({ signal, pageParam }) => coreTermsList({...params, 'page': pageParam || params?.['page']}, requestOptions, signal);
 
       
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData, QueryKey, CoreTermsListParams['page']> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreTermsListInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreTermsList>>>
 export type CoreTermsListInfiniteQueryError = unknown
 
 
+export function useCoreTermsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsList>>, CoreTermsListParams['page']>, TError = unknown>(
+ params: undefined |  CoreTermsListParams, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData, QueryKey, CoreTermsListParams['page']>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsList>>, CoreTermsListParams['page']>, TError = unknown>(
+ params?: CoreTermsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData, QueryKey, CoreTermsListParams['page']>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsList>>, QueryKey
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsList>>, CoreTermsListParams['page']>, TError = unknown>(
+ params?: CoreTermsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData, QueryKey, CoreTermsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreTermsListInfinite<TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(
- params?: CoreTermsListParams, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreTermsListInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsList>>, CoreTermsListParams['page']>, TError = unknown>(
+ params?: CoreTermsListParams, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData, QueryKey, CoreTermsListParams['page']>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreTermsListInfiniteQueryOptions(params,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3687,7 +3994,7 @@ export function useCoreTermsListInfinite<TData = Awaited<ReturnType<typeof coreT
 
 
 
-export const getCoreTermsListQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(params?: CoreTermsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreTermsListQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(params?: CoreTermsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3702,22 +4009,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreTermsListQueryResult = NonNullable<Awaited<ReturnType<typeof coreTermsList>>>
 export type CoreTermsListQueryError = unknown
 
 
+export function useCoreTermsList<TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(
+ params: undefined |  CoreTermsListParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsList<TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(
+ params?: CoreTermsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsList>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsList>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsList<TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(
+ params?: CoreTermsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreTermsList<TData = Awaited<ReturnType<typeof coreTermsList>>, TError = unknown>(
- params?: CoreTermsListParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ params?: CoreTermsListParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsList>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreTermsListQueryOptions(params,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3776,7 +4107,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreTermsCreate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreTermsCreate>>, TError,{data: NonReadonly<Term>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreTermsCreate>>,
         TError,
         {data: NonReadonly<Term>},
@@ -3785,7 +4116,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreTermsCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for terms.
@@ -3818,7 +4149,7 @@ export const getCoreTermsRetrieveQueryKey = (id?: number,) => {
     }
 
     
-export const getCoreTermsRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreTermsRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreTermsRetrieve>>>, TError = unknown>(id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3833,22 +4164,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreTermsRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreTermsRetrieve>>>
 export type CoreTermsRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreTermsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsRetrieve>>>, TError = unknown>(
+ id: number, options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreTermsRetrieveInfinite<TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreTermsRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsRetrieve>>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreTermsRetrieveInfiniteQueryOptions(id,options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3857,7 +4212,7 @@ export function useCoreTermsRetrieveInfinite<TData = Awaited<ReturnType<typeof c
 
 
 
-export const getCoreTermsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreTermsRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3872,22 +4227,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreTermsRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreTermsRetrieve>>>
 export type CoreTermsRetrieveQueryError = unknown
 
 
+export function useCoreTermsRetrieve<TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(
+ id: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsRetrieve<TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsRetrieve<TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreTermsRetrieve<TData = Awaited<ReturnType<typeof coreTermsRetrieve>>, TError = unknown>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+ id: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreTermsRetrieveQueryOptions(id,options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -3946,7 +4325,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreTermsUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreTermsUpdate>>, TError,{id: number;data: NonReadonly<Term>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreTermsUpdate>>,
         TError,
         {id: number;data: NonReadonly<Term>},
@@ -3955,7 +4334,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreTermsUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for terms.
@@ -4007,7 +4386,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreTermsPartialUpdate = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreTermsPartialUpdate>>, TError,{id: number;data: NonReadonly<PatchedTerm>}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreTermsPartialUpdate>>,
         TError,
         {id: number;data: NonReadonly<PatchedTerm>},
@@ -4016,7 +4395,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreTermsPartialUpdateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * CRUD operations for terms.
@@ -4065,7 +4444,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export const useCoreTermsDestroy = <TError = unknown,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreTermsDestroy>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreTermsDestroy>>,
         TError,
         {id: number},
@@ -4074,7 +4453,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
       const mutationOptions = getCoreTermsDestroyMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * Get currently active term.
@@ -4107,7 +4486,7 @@ export const getCoreTermsActiveRetrieveQueryKey = () => {
     }
 
     
-export const getCoreTermsActiveRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>( options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreTermsActiveRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>>, TError = unknown>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -4122,22 +4501,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreTermsActiveRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>>
 export type CoreTermsActiveRetrieveInfiniteQueryError = unknown
 
 
+export function useCoreTermsActiveRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>>, TError = unknown>(
+  options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsActiveRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>>, TError = unknown>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsActiveRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>>, TError = unknown>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
-export function useCoreTermsActiveRetrieveInfinite<TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>(
-  options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreTermsActiveRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>>, TError = unknown>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreTermsActiveRetrieveInfiniteQueryOptions(options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -4146,7 +4549,7 @@ export function useCoreTermsActiveRetrieveInfinite<TData = Awaited<ReturnType<ty
 
 
 
-export const getCoreTermsActiveRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreTermsActiveRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -4161,22 +4564,46 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreTermsActiveRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>>
 export type CoreTermsActiveRetrieveQueryError = unknown
 
 
+export function useCoreTermsActiveRetrieve<TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsActiveRetrieve<TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreTermsActiveRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreTermsActiveRetrieve<TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useCoreTermsActiveRetrieve<TData = Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError = unknown>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreTermsActiveRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreTermsActiveRetrieveQueryOptions(options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 

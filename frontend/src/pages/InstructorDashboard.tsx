@@ -1,22 +1,19 @@
-import React, { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import { Card } from '../components/ui/Card'
 import FileUploadModal from '../components/FileUploadModal'
-import {
-  RadarChart,
-  Radar,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip
-} from 'recharts'
+import { ChartWidget } from '../components/ui/ChartWidget'
 import { ChevronLeft, ChevronRight, Upload } from 'lucide-react'
-import { coreService } from '../services/api'
-import { Course, LearningOutcomeScore } from '../types/index'
 import { useAuth } from '../hooks/useAuth'
+import { 
+  coreCoursesList 
+} from '../api/generated/core/core'
+
+import {
+  coreStudentLoScoresLoAveragesRetrieve
+} from '../api/generated/analytics/analytics'
+import { evaluationGradesCourseAveragesRetrieve } from '../api/generated/evaluation/evaluation'
+import type { Course } from '../api/model/course'
 
 interface CourseWithAnalytics extends Course {
   students?: number
@@ -27,58 +24,84 @@ interface CourseWithAnalytics extends Course {
   gradeDistribution?: Array<{ grade: string; count: number; color: string }>
 }
 
+interface CourseAnalytics {
+  courseId: number
+  loAverages: any[]
+  gradeAverages: Array<{ weighted_average: number | null }>
+}
+
 const InstructorDashboard = () => {
   const { user } = useAuth()
-    const [coursesWithAnalytics, setCoursesWithAnalytics] = useState<CourseWithAnalytics[]>([])
-  const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [activeChart, setActiveChart] = useState('radar')
   const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false)
   const [uploadResult, setUploadResult] = useState<any>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
-  // Helper functions to process API data
-  const aggregateLOScores = (loScores: LearningOutcomeScore[]) => {
-    const aggregated: Record<string, number[]> = {}
+  // Fetch courses for the instructor using orval
+  const { data: coursesData, isLoading: coursesLoading } = useQuery({
+    queryKey: ['instructor-courses', user?.id],
+    queryFn: async () => {
+      // Pass instructor filter via params in options (second parameter)
+      const response = await coreCoursesList(undefined, { params: { instructor: user?.id } })
+      return response.results || []
+    },
+    enabled: !!user?.id
+  })
 
-    loScores.forEach(score => {
-      const loCode = score.learning_outcome.code
-      if (!aggregated[loCode]) {
-        aggregated[loCode] = []
-      }
-      aggregated[loCode].push(score.score)
-    })
+  const courses = useMemo(() => Array.isArray(coursesData) ? coursesData : [], [coursesData])
 
-    return Object.entries(aggregated).map(([lo, scores]) => ({
-      lo,
-      score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+  // Fetch analytics for all courses in parallel using orval raw functions
+  const analyticsQueries = useQueries({
+    queries: courses.map((course: Course) => ({
+      queryKey: ['course-analytics', course.id],
+      queryFn: async () => {
+        try {
+          // Use orval's raw functions (not hooks) inside queryFn
+          const [loAveragesRes, gradeAveragesRes] = await Promise.all([
+            coreStudentLoScoresLoAveragesRetrieve({ course: course.id }),
+            evaluationGradesCourseAveragesRetrieve({ course: course.id, per_student: true })
+          ])
+          
+          const loAverages = Array.isArray(loAveragesRes) ? loAveragesRes : []
+          const gradeAverages = Array.isArray(gradeAveragesRes) ? gradeAveragesRes : []
+          
+          return {
+            courseId: course.id,
+            loAverages,
+            gradeAverages
+          }
+        } catch (error) {
+          console.error(`Error fetching analytics for course ${course.id}:`, error)
+          return {
+            courseId: course.id,
+            loAverages: [],
+            gradeAverages: []
+          }
+        }
+      },
+      enabled: !!courses.length
     }))
-  }
+  })
 
-  const calculateGradeDistribution = (loScores: LearningOutcomeScore[]) => {
-    // Group scores by student
-    const studentScores: Record<number, number[]> = {}
+  // Helper functions to process API data
+  const calculateGradeDistribution = (gradeAverages: Array<{ weighted_average: number | null }>) => {
+    // Filter out null values and get valid averages
+    const validAverages = gradeAverages
+      .map(g => g.weighted_average)
+      .filter((avg): avg is number => avg !== null)
 
-    loScores.forEach(score => {
-      const studentId = (score as any).student_id
-      if (!studentScores[studentId]) {
-        studentScores[studentId] = []
-      }
-      studentScores[studentId].push(score.score)
-    })
+    if (validAverages.length === 0) {
+      return []
+    }
 
-    // Calculate average for each student
-    const studentAverages = Object.values(studentScores).map(scores =>
-      scores.reduce((a, b) => a + b, 0) / scores.length
-    )
-
-    // Grade distribution
+    // Grade distribution based on grade averages
     const distribution = {
-      A: studentAverages.filter(s => s >= 90).length,
-      B: studentAverages.filter(s => s >= 80 && s < 90).length,
-      C: studentAverages.filter(s => s >= 70 && s < 80).length,
-      D: studentAverages.filter(s => s >= 60 && s < 70).length,
-      F: studentAverages.filter(s => s < 60).length
+      A: validAverages.filter(s => s >= 90).length,
+      B: validAverages.filter(s => s >= 80 && s < 90).length,
+      C: validAverages.filter(s => s >= 70 && s < 80).length,
+      D: validAverages.filter(s => s >= 60 && s < 70).length,
+      F: validAverages.filter(s => s < 60).length
     }
 
     return [
@@ -90,91 +113,78 @@ const InstructorDashboard = () => {
     ].filter(item => item.count > 0)
   }
 
-  const calculateAverageScore = (loScores: LearningOutcomeScore[]) => {
-    if (loScores.length === 0) return 0
-    const total = loScores.reduce((sum, score) => sum + score.score, 0)
-    return Math.round(total / loScores.length)
+  const calculateAverageScore = (gradeAverages: Array<{ weighted_average: number | null }>) => {
+    const validAverages = gradeAverages
+      .map(g => g.weighted_average)
+      .filter((avg): avg is number => avg !== null)
+    
+    if (validAverages.length === 0) return 0
+    const total = validAverages.reduce((sum, score) => sum + score, 0)
+    return Math.round(total / validAverages.length)
   }
 
-  const identifyStudentsAtRisk = (loScores: LearningOutcomeScore[]) => {
-    const studentScores: Record<number, number[]> = {}
+  const identifyStudentsAtRisk = (gradeAverages: Array<{ weighted_average: number | null }>) => {
+    const validAverages = gradeAverages
+      .map(g => g.weighted_average)
+      .filter((avg): avg is number => avg !== null)
 
-    loScores.forEach(score => {
-      const studentId = (score as any).student_id
-      if (!studentScores[studentId]) {
-        studentScores[studentId] = []
-      }
-      studentScores[studentId].push(score.score)
-    })
-
-    const studentAverages = Object.values(studentScores).map(scores =>
-      scores.reduce((a, b) => a + b, 0) / scores.length
-    )
-
-    return studentAverages.filter(average => average < 60).length
+    return validAverages.filter(average => average < 60).length
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch courses filtered by instructor on the server side
-        const coursesRes = await coreService.getCourses(undefined, user?.id)
-        const instructorCourses = coursesRes.data
+  // Combine course data with analytics
+  // Create a Map for O(1) lookup of analytics by course ID
+  const analyticsMap = new Map<number, CourseAnalytics>()
+  analyticsQueries.forEach((query, index) => {
+    if (query.data && courses[index]) {
+      analyticsMap.set(courses[index].id, query.data as CourseAnalytics)
+    }
+  })
 
-        // Fetch analytics for each course
-        const coursesData = await Promise.all(
-          instructorCourses.map(async (course: Course) => {
-            try {
-              const loScoresRes = await coreService.getStudentLOScores(undefined, course.id)
-
-              const loScores = loScoresRes.data
-              const aggregatedLOScores = aggregateLOScores(loScores)
-              const gradeDistribution = calculateGradeDistribution(loScores)
-              const avgScore = calculateAverageScore(loScores)
-              const studentsAtRisk = identifyStudentsAtRisk(loScores)
-
-              return {
-                ...course,
-                students: new Set(loScores.map((s: any) => s.student_id)).size,
-                avgScore,
-                studentsAtRisk,
-                weight: course.credits || 1,
-                loScores: aggregatedLOScores,
-                gradeDistribution
-              }
-            } catch (error) {
-              console.error(`Error fetching analytics for course ${course.id}:`, error)
-              return {
-                ...course,
-                students: 0,
-                avgScore: 0,
-                studentsAtRisk: 0,
-                weight: course.credits || 1,
-                loScores: [],
-                gradeDistribution: [
-                  { grade: 'A', count: 0, color: '#10b981' },
-                  { grade: 'B', count: 0, color: '#22c55e' },
-                  { grade: 'C', count: 0, color: '#eab308' },
-                  { grade: 'D', count: 0, color: '#f97316' },
-                  { grade: 'F', count: 0, color: '#ef4444' },
-                ]
-              }
-            }
-          })
-        )
-
-        setCoursesWithAnalytics(coursesData)
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error)
-      } finally {
-        setLoading(false)
+  const coursesWithAnalytics: CourseWithAnalytics[] = courses.map((course: Course) => {
+    const analytics = analyticsMap.get(course.id)
+    
+    if (!analytics) {
+      return {
+        ...course,
+        students: 0,
+        avgScore: 0,
+        studentsAtRisk: 0,
+        weight: course.credits || 1,
+        loScores: [],
+        gradeDistribution: []
       }
     }
 
-    if (user?.id) {
-      fetchData()
+    // Format LO averages for radar chart
+    const aggregatedLOScores = analytics.loAverages.map((lo: any) => ({
+      lo: lo.lo_code,
+      score: Math.round(lo.avg_score)
+    }))
+    
+    // Grade distribution based on grade averages
+    const gradeDistribution = calculateGradeDistribution(analytics.gradeAverages)
+    
+    // Average score from grade averages
+    const avgScore = calculateAverageScore(analytics.gradeAverages)
+    
+    // Students at risk from grade averages
+    const studentsAtRisk = identifyStudentsAtRisk(analytics.gradeAverages)
+    
+    // Count unique students from grade averages
+    const studentCount = analytics.gradeAverages.length
+    
+    return {
+      ...course,
+      students: studentCount,
+      avgScore,
+      studentsAtRisk,
+      weight: course.credits || 1,
+      loScores: aggregatedLOScores,
+      gradeDistribution
     }
-  }, [user])
+  })
+
+  const loading = coursesLoading || analyticsQueries.some(q => q.isLoading)
 
   const nextCourse = () => setCurrentIndex((prev) => (prev + 1) % coursesWithAnalytics.length)
   const prevCourse = () => setCurrentIndex((prev) => (prev - 1 + coursesWithAnalytics.length) % coursesWithAnalytics.length)
@@ -246,9 +256,9 @@ const InstructorDashboard = () => {
                     LO Scores
                   </button>
                   <button
-                    onClick={() => setActiveChart('pie')}
+                    onClick={() => setActiveChart('bar')}
                     className={`px-3 py-1.5 text-sm rounded-lg transition ${
-                      activeChart === 'pie'
+                      activeChart === 'bar'
                         ? 'bg-primary-600 text-white'
                         : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
                     }`}
@@ -268,49 +278,102 @@ const InstructorDashboard = () => {
               {/* Chart Display */}
               <div className="h-80">
                 {activeChart === 'radar' ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={course.loScores}>
-                      <PolarGrid stroke="#e5e7eb" />
-                      <PolarAngleAxis dataKey="lo" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 10 }} />
-                      <Radar
-                        name="Score"
-                        dataKey="score"
-                        stroke="#6366f1"
-                        fill="#6366f1"
-                        fillOpacity={0.4}
-                      />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                        labelStyle={{ color: '#374151' }}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={course.gradeDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={3}
-                        dataKey="count"
-                        label={(entry: any) => `${entry.grade}: ${((entry.percent || 0) * 100).toFixed(0)}%`}
-                        labelLine={{ stroke: '#9ca3af' }}
-                      >
-                        {course.gradeDistribution?.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                        formatter={(value: any, _name: any, props: any) => [`${value} students`, props.payload?.grade || '']}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
+                  <ChartWidget
+                    key={`radar-chart-${course.id}`}
+                    title=""
+                    type="radar"
+                    series={[{
+                      name: 'Score',
+                      data: (course.loScores || []).map(lo => lo.score)
+                    }]}
+                    options={{
+                      xaxis: {
+                        categories: (course.loScores || []).map(lo => lo.lo)
+                      },
+                      yaxis: {
+                        show : false,
+                        min: 0,
+                        max: 100
+                      },
+                      fill: {
+                        opacity: 0.4
+                      },
+                      colors: ['#6366f1'],
+                      markers: {
+                        size: 4
+                      },
+                      dataLabels: {
+                        enabled: true,
+                        background: {
+                          enabled: true,
+                          borderRadius:2,
+                        }
+                      }
+                    }}
+                    height={320}
+                    className="shadow-none border-0 p-0"
+                  />
+                ) : activeChart === 'bar' || activeChart === 'pie' ? (
+                  <ChartWidget
+                    key={`bar-chart-${course.id}`}
+                    title=""
+                    type="bar"
+                    series={[{
+                      name: 'Students',
+                      data: (course.gradeDistribution || []).map(item => item.count)
+                    }]}
+                    options={{
+                      chart: {
+                        toolbar: { show: false }
+                      },
+                      plotOptions: {
+                        bar: {
+                          borderRadius: 6,
+                          horizontal: true,
+                          columnWidth: '50%',
+                          distributed: true,
+                        }
+                      },
+                      grid: {
+                        yaxis: {
+                          lines: { show: false }
+                        }
+                      },
+                      xaxis: {
+                        categories: (course.gradeDistribution || []).map(item => item.grade),
+                        labels: {
+                          style: {
+                            fontSize: '14px',
+                            fontWeight: 600
+                          }
+                        }
+                      },
+                      yaxis: {
+                        labels: {
+                          style: {
+                            fontSize: '13px'
+                          }
+                        }
+                      },
+                      colors: (course.gradeDistribution || []).map(item => item.color),
+                      legend: { show: false },
+                      dataLabels: {
+                        enabled: true,
+                        style: {
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }
+                      },
+                      tooltip: {
+                        y: {
+                          formatter: (val: number) => `${val} student${val !== 1 ? 's' : ''}`
+                        }
+                      }
+                    }}
+                    height={320}
+                    className="shadow-none border-0 p-0"
+                  />
+                ) : null}
               </div>
             </div>
 

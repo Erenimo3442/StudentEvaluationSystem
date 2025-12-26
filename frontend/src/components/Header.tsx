@@ -79,7 +79,7 @@ export const Header = ({ setSidebarOpen }: HeaderProps) => {
                             <div className="flex items-center space-x-3 pl-4 border-l border-secondary-200">
                                 <div className="text-right hidden sm:block">
                                     <p className="text-sm font-semibold text-secondary-900">
-                                        {user.role === 'instructor' ? 'Lecturer' : user.role} {user.first_name || user.username} {user.last_name || ''}
+                                        {user.first_name || user.username} {user.last_name || ''}
                                     </p>
                                     <p className="text-xs text-secondary-500 capitalize">{user.role}</p>
                                 </div>

@@ -128,6 +128,11 @@ export interface ProgramOutcomeScore {
   score: number
 }
 
+export interface CourseAverage {
+  course_id: number
+  weighted_average: number | null
+}
+
 export interface CourseOutcome {
   id: number;
   course: number;

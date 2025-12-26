@@ -9,18 +9,25 @@ import {
   useInfiniteQuery,
   useMutation,
   useQuery
-} from 'react-query';
+} from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseInfiniteQueryResult,
+  DefinedUseQueryResult,
+  InfiniteData,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseInfiniteQueryOptions,
   UseInfiniteQueryResult,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
   UseQueryResult
-} from 'react-query';
+} from '@tanstack/react-query';
 
 import type {
   CoreFileImportLearningOutcomesUploadCreate400,
@@ -72,7 +79,7 @@ export const getCoreFileImportLearningOutcomesUploadRetrieveQueryKey = () => {
     }
 
     
-export const getCoreFileImportLearningOutcomesUploadRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>( options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreFileImportLearningOutcomesUploadRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -87,25 +94,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreFileImportLearningOutcomesUploadRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>>
 export type CoreFileImportLearningOutcomesUploadRetrieveInfiniteQueryError = CoreFileImportLearningOutcomesUploadRetrieve400
 
 
+export function useCoreFileImportLearningOutcomesUploadRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
+  options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesUploadRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesUploadRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Upload and import learning outcomes
  */
 
-export function useCoreFileImportLearningOutcomesUploadRetrieveInfinite<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
-  options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreFileImportLearningOutcomesUploadRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreFileImportLearningOutcomesUploadRetrieveInfiniteQueryOptions(options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -114,7 +145,7 @@ export function useCoreFileImportLearningOutcomesUploadRetrieveInfinite<TData = 
 
 
 
-export const getCoreFileImportLearningOutcomesUploadRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreFileImportLearningOutcomesUploadRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -129,25 +160,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreFileImportLearningOutcomesUploadRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>>
 export type CoreFileImportLearningOutcomesUploadRetrieveQueryError = CoreFileImportLearningOutcomesUploadRetrieve400
 
 
+export function useCoreFileImportLearningOutcomesUploadRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesUploadRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesUploadRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Upload and import learning outcomes
  */
 
 export function useCoreFileImportLearningOutcomesUploadRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError = CoreFileImportLearningOutcomesUploadRetrieve400>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreFileImportLearningOutcomesUploadRetrieveQueryOptions(options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -212,7 +267,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useCoreFileImportLearningOutcomesUploadCreate = <TError = CoreFileImportLearningOutcomesUploadCreate400,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadCreate>>, TError,{data: CoreFileImportLearningOutcomesUploadCreateBody}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreFileImportLearningOutcomesUploadCreate>>,
         TError,
         {data: CoreFileImportLearningOutcomesUploadCreateBody},
@@ -221,7 +276,7 @@ export const useCoreFileImportLearningOutcomesUploadCreate = <TError = CoreFileI
 
       const mutationOptions = getCoreFileImportLearningOutcomesUploadCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     /**
  * Validate file format for learning outcomes import
@@ -255,7 +310,7 @@ export const getCoreFileImportLearningOutcomesValidateRetrieveQueryKey = () => {
     }
 
     
-export const getCoreFileImportLearningOutcomesValidateRetrieveInfiniteQueryOptions = <TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>( options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreFileImportLearningOutcomesValidateRetrieveInfiniteQueryOptions = <TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>( options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -270,25 +325,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreFileImportLearningOutcomesValidateRetrieveInfiniteQueryResult = NonNullable<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>>
 export type CoreFileImportLearningOutcomesValidateRetrieveInfiniteQueryError = CoreFileImportLearningOutcomesValidateRetrieve400
 
 
+export function useCoreFileImportLearningOutcomesValidateRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
+  options: { query:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesValidateRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesValidateRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Validate learning outcomes file
  */
 
-export function useCoreFileImportLearningOutcomesValidateRetrieveInfinite<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
-  options?: { query?:UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey } {
+export function useCoreFileImportLearningOutcomesValidateRetrieveInfinite<TData = InfiniteData<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
+  options?: { query?:Partial<UseInfiniteQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreFileImportLearningOutcomesValidateRetrieveInfiniteQueryOptions(options)
 
-  const query = useInfiniteQuery(queryOptions) as  UseInfiniteQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useInfiniteQuery(queryOptions, queryClient) as  UseInfiniteQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -297,7 +376,7 @@ export function useCoreFileImportLearningOutcomesValidateRetrieveInfinite<TData 
 
 
 
-export const getCoreFileImportLearningOutcomesValidateRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
+export const getCoreFileImportLearningOutcomesValidateRetrieveQueryOptions = <TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -312,25 +391,49 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 
       
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData> & { queryKey: QueryKey }
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
 
 export type CoreFileImportLearningOutcomesValidateRetrieveQueryResult = NonNullable<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>>
 export type CoreFileImportLearningOutcomesValidateRetrieveQueryError = CoreFileImportLearningOutcomesValidateRetrieve400
 
 
+export function useCoreFileImportLearningOutcomesValidateRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesValidateRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>,
+          TError,
+          Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCoreFileImportLearningOutcomesValidateRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Validate learning outcomes file
  */
 
 export function useCoreFileImportLearningOutcomesValidateRetrieve<TData = Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError = CoreFileImportLearningOutcomesValidateRetrieve400>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>, request?: SecondParameter<typeof customInstance>}
-  
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateRetrieve>>, TError, TData>>, request?: SecondParameter<typeof customInstance>}
+ , queryClient?: QueryClient 
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getCoreFileImportLearningOutcomesValidateRetrieveQueryOptions(options)
 
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   query.queryKey = queryOptions.queryKey ;
 
@@ -395,7 +498,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  */
 export const useCoreFileImportLearningOutcomesValidateCreate = <TError = CoreFileImportLearningOutcomesValidateCreate400,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateCreate>>, TError,{data: CoreFileImportLearningOutcomesValidateCreateBody}, TContext>, request?: SecondParameter<typeof customInstance>}
- ): UseMutationResult<
+ , queryClient?: QueryClient): UseMutationResult<
         Awaited<ReturnType<typeof coreFileImportLearningOutcomesValidateCreate>>,
         TError,
         {data: CoreFileImportLearningOutcomesValidateCreateBody},
@@ -404,6 +507,6 @@ export const useCoreFileImportLearningOutcomesValidateCreate = <TError = CoreFil
 
       const mutationOptions = getCoreFileImportLearningOutcomesValidateCreateMutationOptions(options);
 
-      return useMutation(mutationOptions);
+      return useMutation(mutationOptions, queryClient);
     }
     

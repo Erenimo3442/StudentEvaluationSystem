@@ -9,6 +9,8 @@ import {
     UsersIcon,
     Cog6ToothIcon,
     ArrowRightStartOnRectangleIcon,
+    ClipboardDocumentListIcon,
+    ChartPieIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 
@@ -32,15 +34,14 @@ const getNavigationForRole = (role: string | null): NavItem[] => {
         ]
     }
 
-    const baseNavigation = [
-        { name: 'Dashboard', href: `/${role}`, icon: HomeIcon },
-        { name: 'Courses', href: `/${role}/courses`, icon: AcademicCapIcon },
-    ]
+    const baseNavigation: NavItem[] = []
 
     if (role === 'student') {
         return [
             ...baseNavigation,
             { name: 'Analytics', href: `/${role}/analytics`, icon: ChartBarIcon, roles: ['student'] },
+            { name: 'Assignments', href: `/${role}/assignments`, icon: ClipboardDocumentListIcon, roles: ['student'] },
+            { name: 'Outcomes', href: `/${role}/outcomes`, icon: ChartPieIcon, roles: ['student'] },
         ]
     }
 
@@ -72,7 +73,9 @@ export const Sidebar = ({ isOpen, setIsOpen, showOnlyCoreItems = false }: Sideba
     const location = useLocation()
     const navigate = useNavigate()
 
-    const navigation = showOnlyCoreItems ? [] : getNavigationForRole(user?.role || null)
+    let navigation: NavItem[] = []
+    navigation = showOnlyCoreItems ? [] : getNavigationForRole(user?.role || null)
+
 
     return (
         <>
@@ -100,7 +103,34 @@ export const Sidebar = ({ isOpen, setIsOpen, showOnlyCoreItems = false }: Sideba
                     {/* Navigation */}
                     <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                         {navigation.map((item: NavItem) => {
-                            const isActive = location.pathname === item.href
+                            // Check if this is a hash link (for student course detail)
+                            const isHashLink = item.href.startsWith('#')
+                            // For hash links, check against window.location.hash
+                            const isActive = isHashLink
+                                ? window.location.hash === item.href
+                                : location.pathname === item.href
+
+                            if (isHashLink) {
+                                return (
+                                    <a
+                                        key={item.name}
+                                        href={item.href}
+                                        className={clsx(
+                                            "flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 group",
+                                            isActive
+                                                ? 'bg-primary-50 text-primary-700 shadow-sm'
+                                                : 'text-secondary-600 hover:bg-secondary-50 hover:text-secondary-900'
+                                        )}
+                                    >
+                                        <item.icon className={clsx(
+                                            "h-6 w-6 transition-colors duration-200",
+                                            isActive ? 'text-primary-600' : 'text-secondary-400 group-hover:text-secondary-600'
+                                        )} />
+                                        <span>{item.name}</span>
+                                    </a>
+                                )
+                            }
+
                             return (
                                 <Link
                                     key={item.name}

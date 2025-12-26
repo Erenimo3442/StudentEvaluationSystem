@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useQueries } from '@tanstack/react-query'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import {
@@ -8,53 +8,51 @@ import {
   AcademicCapIcon,
   UsersIcon,
   ChartBarIcon,
-  BuildingOfficeIcon,
-  CalendarIcon,
   EyeIcon,
   FunnelIcon,
 } from '@heroicons/react/24/outline'
-import { coreService } from '../services/api'
-import { Course, Program } from '../types/index'
+import { coreCoursesList, coreProgramsList } from '../api/generated/core/core'
 
 const HeadCourses = () => {
-  const { user } = useAuth()
-  const [courses, setCourses] = useState<Course[]>([])
-  const [programs, setPrograms] = useState<Program[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedProgram, setSelectedProgram] = useState<string>('all')
+  const [selectedProgram, setSelectedProgram] = React.useState<string>('all')
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [coursesRes, programsRes] = await Promise.all([
-          coreService.getCourses(),
-          coreService.getPrograms()
-        ])
-        
-        setCourses(coursesRes.data)
-        setPrograms(programsRes.data)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        setCourses([])
-        setPrograms([])
-      } finally {
-        setLoading(false)
-      }
-    }
+  const results = useQueries({
+    queries: [
+      {
+        queryKey: ['courses'],
+        queryFn: () => coreCoursesList({}),
+      },
+      {
+        queryKey: ['programs'],
+        queryFn: () => coreProgramsList({}),
+      },
+    ],
+  })
 
-    fetchData()
-  }, [])
+  const [coursesQuery, programsQuery] = results
+  const loading = results.some(q => q.isLoading)
 
-  const filteredCourses = selectedProgram === 'all' 
-    ? courses 
-    : courses.filter(course => course.program === parseInt(selectedProgram))
+  const courses = useMemo(() => coursesQuery.data?.results || [], [coursesQuery.data])
+  const programs = useMemo(() => programsQuery.data?.results || [], [programsQuery.data])
 
-  const totalStudents = courses.reduce((sum, course) => {
-    // Mock calculation - this should come from API
-    return sum + Math.floor(Math.random() * 60) + 15
-  }, 0)
+  const filteredCourses = useMemo(() => {
+    if (selectedProgram === 'all') return courses
+    return courses.filter(course => course.program?.id === parseInt(selectedProgram))
+  }, [courses, selectedProgram])
 
-  const totalInstructors = new Set(courses.map(course => course.lecturer?.id).filter(Boolean)).size
+  const totalStudents = useMemo(() => {
+    return courses.reduce((sum) => sum + Math.floor(Math.random() * 60) + 15, 0)
+  }, [courses])
+
+  const totalInstructors = useMemo(() => {
+    const instructorIds = new Set<number>()
+    courses.forEach(course => {
+      course.instructors?.forEach(instructor => {
+        if (typeof instructor.id === 'number') instructorIds.add(instructor.id)
+      })
+    })
+    return instructorIds.size
+  }, [courses])
 
   const totalCredits = courses.reduce((sum, course) => sum + (course.credits || 0), 0)
 
@@ -172,7 +170,7 @@ const HeadCourses = () => {
               </thead>
               <tbody>
                 {filteredCourses.map((course) => {
-                  const program = programs.find(p => p.id === course.program)
+                  const program = programs.find(p => p.id === course.program?.id)
                   const studentCount = Math.floor(Math.random() * 60) + 15 // Mock data
                   
                   return (
@@ -190,8 +188,8 @@ const HeadCourses = () => {
                       </td>
                       <td className="py-3 px-4">
                         <div className="text-sm text-secondary-900">
-                          {course.lecturer 
-                            ? `${course.lecturer.first_name} ${course.lecturer.last_name}`
+                          {course.instructors && course.instructors.length > 0
+                            ? `${course.instructors[0].first_name} ${course.instructors[0].last_name}`
                             : 'Not assigned'
                           }
                         </div>

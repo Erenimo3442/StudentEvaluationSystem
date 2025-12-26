@@ -8,6 +8,14 @@
 
 export type CoreProgramsListParams = {
 /**
+ * Filter programs by degree level ID
+ */
+degree_level?: number;
+/**
+ * Filter programs by department ID
+ */
+department?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;

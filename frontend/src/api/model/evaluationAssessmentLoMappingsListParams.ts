@@ -8,6 +8,10 @@
 
 export type EvaluationAssessmentLoMappingsListParams = {
 /**
+ * Filter mappings by assessment ID
+ */
+assessment?: number;
+/**
  * A page number within the paginated result set.
  */
 page?: number;

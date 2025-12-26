@@ -122,3 +122,16 @@ class FileValidationResponseSerializer(serializers.Serializer):
     message = serializers.CharField()
     available_sheets = serializers.ListField(child=serializers.CharField())
     file_info = serializers.DictField()
+
+# Analytics response serializers
+class CourseAverageSerializer(serializers.Serializer):
+    """Serializer for course average LO scores."""
+    course_id = serializers.IntegerField()
+    weighted_average = serializers.FloatField(allow_null=True)
+
+class LearningOutcomeAverageSerializer(serializers.Serializer):
+    """Serializer for learning outcome average scores."""
+    lo_id = serializers.IntegerField()
+    lo_code = serializers.CharField()
+    lo_description = serializers.CharField()
+    avg_score = serializers.FloatField()
