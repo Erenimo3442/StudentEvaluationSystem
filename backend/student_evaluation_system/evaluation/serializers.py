@@ -17,12 +17,20 @@ class AssessmentLearningOutcomeMappingSerializer(serializers.ModelSerializer):
     learning_outcome_id = serializers.PrimaryKeyRelatedField(
         queryset=LearningOutcome.objects.all(),
         source='learning_outcome',
-        write_only=True
+        write_only=True,
+        required=False
+    )
+    assessment_id = serializers.PrimaryKeyRelatedField(
+        queryset=Assessment.objects.all(),
+        source='assessment',
+        write_only=True,
+        required=False
     )
     
     class Meta:
         model = AssessmentLearningOutcomeMapping
-        fields = ['id', 'learning_outcome', 'learning_outcome_id', 'weight']
+        fields = ['id', 'assessment', 'assessment_id', 'learning_outcome', 'learning_outcome_id', 'weight']
+        read_only_fields = ['assessment']
 
 class AssessmentSerializer(serializers.ModelSerializer):
     course = serializers.StringRelatedField(read_only=True)

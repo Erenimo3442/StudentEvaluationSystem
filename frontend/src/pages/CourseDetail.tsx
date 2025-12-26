@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { coreCoursesRetrieve, coreLearningOutcomesList } from '../api/generated/core/core'
 import FileUploadModal from '../components/FileUploadModal'
+import MappingEditor from '../components/MappingEditor'
 import { coreStudentLoScoresList } from '../api/generated/scores/scores'
 
 interface BoxPlotData {
@@ -24,6 +25,7 @@ interface HeatmapData {
 const CourseDetail = () => {
 const { id: courseId } = useParams<{ id: string }>()
 const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false)
+const [isMappingEditorOpen, setIsMappingEditorOpen] = useState(false)
 const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -297,6 +299,15 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
             </svg>
             <span>Import File</span>
           </button>
+          <button
+            onClick={() => setIsMappingEditorOpen(true)}
+            className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span>Outcome Mapping</span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -567,6 +578,18 @@ const [notification, setNotification] = useState<{ type: 'success' | 'error'; me
         onUploadComplete={handleUploadComplete}
         onError={handleUploadError}
       />
+
+      {/* Mapping Editor Modal */}
+      {isMappingEditorOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto p-6">
+            <MappingEditor
+              courseId={Number(courseId)}
+              onClose={() => setIsMappingEditorOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

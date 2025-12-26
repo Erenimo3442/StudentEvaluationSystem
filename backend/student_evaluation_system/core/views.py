@@ -207,16 +207,16 @@ class CourseViewSet(viewsets.ModelViewSet):
 )
 class ProgramOutcomeViewSet(viewsets.ModelViewSet):
     """CRUD operations for program outcomes."""
-    queryset = ProgramOutcome.objects.select_related('department', 'term', 'created_by').all()
+    queryset = ProgramOutcome.objects.select_related('program', 'term', 'created_by').all()
     serializer_class = ProgramOutcomeSerializer
     
     def get_queryset(self):
         queryset = super().get_queryset()
-        department_id = self.request.query_params.get('department', None)
+        program_id = self.request.query_params.get('program', None)
         term_id = self.request.query_params.get('term', None)
         
-        if department_id:
-            queryset = queryset.filter(department_id=department_id)
+        if program_id:
+            queryset = queryset.filter(program_id=program_id)
         if term_id:
             queryset = queryset.filter(term_id=term_id)
         
