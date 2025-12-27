@@ -1,6 +1,5 @@
 import {
     Bars3Icon,
-    BellIcon,
     UserCircleIcon,
 } from '@heroicons/react/24/outline'
 import { NavLink } from 'react-router-dom'

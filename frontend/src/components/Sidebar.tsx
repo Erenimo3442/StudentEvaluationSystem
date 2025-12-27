@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
     HomeIcon,
-    AcademicCapIcon,
     DocumentTextIcon,
     ChartBarIcon,
     UsersIcon,
