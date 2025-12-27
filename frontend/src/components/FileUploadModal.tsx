@@ -161,18 +161,21 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
       const getUploadInfo = async () => {
         try {
           switch (type) {
-            case 'assignment_scores':
+            case 'assignment_scores': {
               const info = await fileImportService.getAssignmentScoresUploadInfo()
               setUploadInfo(info)
               break
-            case 'learning_outcomes':
+            }
+            case 'learning_outcomes': {
               const loInfo = await fileImportService.getLearningOutcomesUploadInfo()
               setUploadInfo(loInfo)
               break
-            case 'program_outcomes':
+            }
+            case 'program_outcomes': {
               const poInfo = await fileImportService.getProgramOutcomesUploadInfo()
               setUploadInfo(poInfo)
               break
+            }
             default:
               setUploadInfo(null)
           }
